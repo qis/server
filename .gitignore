@@ -1,0 +1,17 @@
+# Hidden Files
+.*
+!.clang-format
+!.clang-tidy
+!.gitattributes
+!.gitignore
+
+# Binary Files
+/bin/
+/build/
+/lib/
+/res/cer/
+
+# Application
+/*.core
+/*.log
+/core
