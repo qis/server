@@ -2,7 +2,7 @@ MAKEFLAGS += --no-print-directory
 
 CC	!= which clang-devel || which clang
 CXX	!= which clang++-devel || which clang++
-DBG	!= whilch lldb || which gdb
+DBG	!= which lldb || which gdb
 CMAKE	:= CC=$(CC) CXX=$(CXX) cmake -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON
 BUILD	!= echo $(PWD) | tr '/' '-' | sed 's|^-|/var/build/|'
 PROJECT	!= grep "^project" CMakeLists.txt | cut -c9- | cut -d " " -f1 | tr "[:upper:]" "[:lower:]"
