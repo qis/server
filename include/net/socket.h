@@ -54,7 +54,7 @@ public:
 
   // Reads data from socket.
   // Returns on closed connection.
-  net::async_generator<std::string_view> recv(std::size_t size) {
+  net::async_generator<std::string_view> recv(std::size_t size = 4096) {
     std::vector<char> buffer;
     buffer.resize(size);
     while (true) {

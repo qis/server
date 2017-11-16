@@ -64,6 +64,9 @@ if(WIN32)
   target_link_libraries(net PUBLIC ws2_32 mswsock)
 endif()
 
+find_package(fmt REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/fmt)
+target_link_libraries(net PUBLIC fmt::fmt)
+
 find_package(tls REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tls)
 target_link_libraries(net PRIVATE tls::tls)
 
