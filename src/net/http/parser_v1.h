@@ -36,7 +36,16 @@ public:
   }
 
   std::size_t parse(const char* data, std::size_t size) {
-    return http_parser_execute(this, &settings_, data, size);
+    size = http_parser_execute(this, &settings_, data, size);
+    switch (http_errno) {
+    case HPE_OK: break;
+    case HPE_PAUSED: http_parser_pause(this, 0); consume_ = true; break;
+    default: {
+      const auto ev = static_cast<enum http_errno>(http_errno);
+      throw exception(http_errno_name(ev), http_errno_description(ev));
+    }
+    }
+    return size;
   }
 
   net::http::request& get() noexcept {
@@ -47,10 +56,20 @@ public:
     return ready_;
   }
 
+  bool consume() const noexcept {
+    return consume_;
+  }
+
+  net::single_consumer_event& event() noexcept {
+    consume_ = false;
+    return request_.consumed_;
+  }
+
 private:
   int on_message_begin() {
     ready_ = false;
     query_ = false;
+    consume_ = false;
     field_.clear();
     value_.clear();
     request_.reset();
@@ -107,18 +126,27 @@ private:
     if (flags & F_CONTENTLENGTH) {
       request_.content_length = static_cast<std::size_t>(content_length);
     }
-    return 1;
+    // TODO: Fix this!
+    ready_ = true;
+    http_parser_pause(this, 1);
+    return 0;
   }
 
   int on_body(const char* data, size_t size) {
-    if (size) {
-      request_.resume({ data, size });
-    }
+    // TODO: Fix this!
+    ready_ = false;
+    consume_ = true;
+    request_.resume({ data, size });
+    http_parser_pause(this, 1);
     return 0;
   }
 
   int on_message_complete() {
+    // TODO: Fix this!
+    ready_ = false;
+    consume_ = true;
     request_.resume({});
+    http_parser_pause(this, 1);
     return 0;
   }
 
@@ -161,6 +189,7 @@ private:
 
   bool ready_ = false;
   bool query_ = false;
+  bool consume_ = false;
   std::string field_;
   std::string value_;
   net::http::request request_;

@@ -52,51 +52,6 @@ enum class header {
   range,
 };
 
-class resume {
-public:
-  using handle_type = std::experimental::coroutine_handle<>;
-
-  resume() noexcept = default;
-
-  resume(resume&& other) = delete;
-  resume& operator=(resume&& other) = delete;
-
-  resume(const resume& other) = delete;
-  resume& operator=(const resume& other) = delete;
-
-  //~resume() {
-  //  if (handle_) {
-  //    handle_.destroy();
-  //  }
-  //}
-
-  constexpr bool await_ready() noexcept {
-    return ready_;
-  }
-
-  void await_suspend(handle_type handle) noexcept {
-    handle_ = handle;
-  }
-
-  auto await_resume() noexcept {
-    ready_ = false;
-    return std::exchange(data_, {});
-  }
-
-  void operator()(std::string_view data) noexcept {
-    data_ = data;
-    ready_ = true;
-    if (auto handle = std::exchange(handle_, nullptr)) {
-      handle.resume();
-    }
-  }
-
-private:
-  bool ready_ = false;
-  std::string_view data_ = 0;
-  handle_type handle_ = nullptr;
-};
-
 class request {
 public:
   request() = default;
@@ -116,11 +71,19 @@ public:
   std::size_t content_length = 0;
   bool keep_alive = false;
   bool closed = false;
-  resume resume;
 
-  net::async_generator<std::string_view> body() noexcept;
+  net::async_generator<std::string_view> recv() noexcept;
 
+private:
+  void resume(std::string_view data);
   void reset();
+
+  net::single_consumer_event received_;  // TODO: Fix this!
+  net::single_consumer_event consumed_;  // TODO: Fix this!
+  std::string_view data_;
+
+  friend class parser_v1;
+  friend class parser_v2;
 };
 
 net::async_generator<request> recv(net::connection& socket, std::size_t size = 4096);

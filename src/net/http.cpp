@@ -14,6 +14,8 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
   //if (const auto alpn = socket->alpn(); alpn && std::string_view(alpn) == "h2") {
   //} else {
   //}
+
+  // TODO: Fix this!
   parser_v1 parser;
   while (true) {
     const auto& data = co_await socket->recv(buffer.data(), buffer.size());
@@ -23,6 +25,12 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
         parser.get().closed = true;
         co_yield parser.get();
       }
+      if (parser.consume()) {
+        fmt::print("consuming on close\n");
+        co_await parser.event();
+        parser.event().reset();
+        fmt::print("consumed on close\n");
+      }
       break;
     }
     auto buffer_data = data.data();
@@ -30,7 +38,14 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
     while (buffer_size) {
       const auto bytes = parser.parse(buffer_data, buffer_size);
       if (parser.ready()) {
+        fmt::print("yielding\n");
         co_yield parser.get();
+      }
+      if (parser.consume()) {
+        fmt::print("consuming\n");
+        co_await parser.event();
+        parser.event().reset();
+        fmt::print("consumed\n");
       }
       buffer_data += bytes;
       buffer_size -= bytes;
@@ -39,12 +54,29 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
   co_return;
 }
 
-net::async_generator<std::string_view> request::body() noexcept {
-  auto data = co_await resume;
-  if (!data.empty()) {
-    co_yield data;
+net::async_generator<std::string_view> request::recv() noexcept {
+  // TODO: Fix this!
+  while (true) {
+    fmt::print("awaiting\n");
+    co_await received_;
+    received_.reset();
+    fmt::print("awaited\n");
+    if (data_.empty()) {
+      break;
+    }
+    co_yield data_;
+    fmt::print("set consumed\n");
+    consumed_.set();
   }
+  fmt::print("set consumed on close\n");
+  consumed_.set();
   co_return;
+}
+
+void request::resume(std::string_view data) {
+  // TODO: Fix this!
+  data_ = data;
+  received_.set();
 }
 
 void request::reset() {
@@ -88,14 +120,14 @@ void format_arg(fmt::BasicFormatter<char>& formatter, const char*& format, const
 }
 
 void format_arg(fmt::BasicFormatter<char>& formatter, const char*& format, const request& request) {
-  formatter.writer().write("{} {} {}\n", request.method, request.path, request.version);
+  formatter.writer().write("{} {} {}", request.method, request.path, request.version);
   for (const auto& e : request.headers) {
-    formatter.writer().write("{}: {}\n", e.first, e.second);
+    formatter.writer().write("\n{}: {}", e.first, e.second);
   }
   if (request.content_length) {
-    formatter.writer().write("Content-Length: {}\n", request.content_length);
+    formatter.writer().write("\nContent-Length: {}", request.content_length);
   }
-  formatter.writer().write("Connection: {}\n", request.keep_alive ? "keep-alive" : "close");
+  formatter.writer().write("\nConnection: {}", request.keep_alive ? "keep-alive" : "close");
 }
 
 }  // namespace net::http

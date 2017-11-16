@@ -66,6 +66,64 @@ public:
 // SOFTWARE.
 // ============================================================================
 
+// == single_consumer_event ===================================================
+
+class single_consumer_event {
+public:
+  single_consumer_event(bool initiallySet = false) noexcept : m_state(initiallySet ? state::set : state::not_set) {
+  }
+
+  bool is_set() const noexcept {
+    return m_state.load(std::memory_order_acquire) == state::set;
+  }
+
+  void set() {
+    const state oldState = m_state.exchange(state::set, std::memory_order_acq_rel);
+    if (oldState == state::not_set_consumer_waiting) {
+      m_awaiter.resume();
+    }
+  }
+
+  void reset() noexcept {
+    state oldState = state::set;
+    m_state.compare_exchange_strong(oldState, state::not_set, std::memory_order_relaxed);
+  }
+
+  auto operator co_await() noexcept {
+    class awaiter {
+    public:
+      awaiter(single_consumer_event& event) : m_event(event) {
+      }
+
+      bool await_ready() const noexcept {
+        return m_event.is_set();
+      }
+
+      bool await_suspend(std::experimental::coroutine_handle<> awaiter) {
+        m_event.m_awaiter = awaiter;
+
+        state oldState = state::not_set;
+        return m_event.m_state.compare_exchange_strong(
+          oldState, state::not_set_consumer_waiting, std::memory_order_release, std::memory_order_acquire);
+      }
+
+      void await_resume() noexcept {
+      }
+
+    private:
+      single_consumer_event& m_event;
+    };
+
+    return awaiter{ *this };
+  }
+
+private:
+  enum class state { not_set, not_set_consumer_waiting, set };
+
+  std::atomic<state> m_state;
+  std::experimental::coroutine_handle<> m_awaiter;
+};
+
 // == async_mutex =============================================================
 
 class async_mutex_lock;
@@ -202,13 +260,6 @@ class task_promise_base {
     template <typename PROMISE>
     void await_suspend(std::experimental::coroutine_handle<PROMISE> coroutine) {
       task_promise_base& promise = coroutine.promise();
-
-      // Use 'release' memory semantics in case we finish before the
-      // awaiter can suspend so that the awaiting thread sees our
-      // writes to the resulting value.
-      // Use 'acquire' memory semantics in case the caller registered
-      // the continuation before we finished. Ensure we see their write
-      // to m_continuation.
       if (promise.m_state.exchange(true, std::memory_order_acq_rel)) {
         promise.m_continuation.resume();
       }
@@ -257,10 +308,6 @@ protected:
 private:
   continuation m_continuation;
   std::exception_ptr m_exception;
-
-  // Initially false. Set to true when either a continuation is registered
-  // or when the coroutine has run to completion. Whichever operation
-  // successfully transitions from false->true got there first.
   std::atomic<bool> m_state;
 };
 
@@ -293,17 +340,14 @@ public:
   }
 
 private:
-#if CPPCORO_COMPILER_MSVC
+#ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable : 4324)  // structure was padded due to alignment.
+#pragma warning(disable : 4324)
 #endif
 
-  // Not using std::aligned_storage here due to bug in MSVC 2015 Update 2
-  // that means it doesn't work for types with alignof(T) > 8.
-  // See MS-Connect bug #2658635.
   alignas(T) char m_valueStorage[sizeof(T)];
 
-#if CPPCORO_COMPILER_MSVC
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 };
@@ -345,14 +389,6 @@ private:
 
 }  // namespace detail
 
-/// \brief
-/// A task represents an operation that produces a result both lazily
-/// and asynchronously.
-///
-/// When you call a coroutine that returns a task, the coroutine
-/// simply captures any passed parameters and returns exeuction to the
-/// caller. Execution of the coroutine body does not start until the
-/// coroutine is first co_await'ed.
 template <typename T = void>
 class task {
 public:
@@ -372,22 +408,6 @@ private:
     }
 
     bool await_suspend(std::experimental::coroutine_handle<> awaiter) noexcept {
-      // NOTE: We are using the bool-returning version of await_suspend() here
-      // to work around a potential stack-overflow issue if a coroutine
-      // awaits many synchronously-completing tasks in a loop.
-      //
-      // We first start the task by calling resume() and then conditionally
-      // attach the continuation if it has not already completed. This allows us
-      // to immediately resume the awaiting coroutine without increasing
-      // the stack depth, avoiding the stack-overflow problem. However, it has
-      // the down-side of requiring a std::atomic to arbitrate the race between
-      // the coroutine potentially completing on another thread concurrently
-      // with registering the continuation on this thread.
-      //
-      // We can eliminate the use of the std::atomic once we have access to
-      // coroutine_handle-returning await_suspend() on both MSVC and Clang
-      // as this will provide ability to suspend the awaiting coroutine and
-      // resume another coroutine with a guaranteed tail-call to resume().
       m_coroutine.resume();
       return m_coroutine.promise().try_set_continuation(detail::continuation{ awaiter });
     }
@@ -404,11 +424,9 @@ public:
     t.m_coroutine = nullptr;
   }
 
-  /// Disable copy construction/assignment.
   task(const task&) = delete;
   task& operator=(const task&) = delete;
 
-  /// Frees resources used by this task.
   ~task() {
     if (m_coroutine) {
       m_coroutine.destroy();
@@ -428,10 +446,6 @@ public:
     return *this;
   }
 
-  /// \brief
-  /// Query if the task result is complete.
-  ///
-  /// Awaiting a task that is ready is guaranteed not to block/suspend.
   bool is_ready() const noexcept {
     return !m_coroutine || m_coroutine.done();
   }
@@ -468,9 +482,6 @@ public:
     return awaitable{ m_coroutine };
   }
 
-  /// \brief
-  /// Returns an awaitable that will await completion of the task without
-  /// attempting to retrieve the result.
   auto when_ready() const noexcept {
     struct awaitable : awaitable_base {
       using awaitable_base::awaitable_base;
@@ -482,7 +493,6 @@ public:
     return awaitable{ m_coroutine };
   }
 
-  // Internal helper method for when_all() implementation.
   auto get_starter() const noexcept {
     class starter {
     public:
@@ -576,7 +586,6 @@ public:
     return *m_value;
   }
 
-  // Don't allow any use of 'co_await' inside the generator coroutine.
   template <typename U>
   std::experimental::suspend_never await_transform(U&& value) = delete;
 
@@ -590,7 +599,6 @@ class generator_iterator {
 
 public:
   using iterator_category = std::input_iterator_tag;
-  // What type should we use for counting elements of a potentially infinite sequence?
   using difference_type = std::size_t;
   using value_type = std::remove_reference_t<T>;
   using reference = value_type&;
@@ -619,10 +627,6 @@ public:
     return *this;
   }
 
-  // Don't support post-increment as that would require taking a
-  // copy of the old value into the returned iterator as there
-  // are no guarantees it's still going to be valid after the
-  // increment is executed.
   generator_iterator operator++(int) = delete;
 
   reference operator*() const noexcept {
@@ -723,9 +727,6 @@ class async_generator_advance_operation;
 class async_generator_promise_base {
 public:
   async_generator_promise_base() noexcept : m_state(state::value_ready_producer_suspended), m_exception(nullptr) {
-    // Other variables left intentionally uninitialised as they're
-    // only referenced in certain states by which time they should
-    // have been initialised.
   }
 
   async_generator_promise_base(const async_generator_promise_base& other) = delete;
@@ -738,8 +739,6 @@ public:
   async_generator_yield_operation final_suspend() noexcept;
 
   void unhandled_exception() noexcept {
-    // Don't bother capturing the exception if we have been cancelled
-    // as there is no consumer that will see it.
     if (m_state.load(std::memory_order_relaxed) != state::cancelled) {
       m_exception = std::current_exception();
     }
@@ -748,10 +747,6 @@ public:
   void return_void() noexcept {
   }
 
-  /// Query if the generator has reached the end of the sequence.
-  ///
-  /// Only valid to call after resuming from an awaited advance operation.
-  /// i.e. Either a begin() or iterator::operator++() operation.
   bool finished() const noexcept {
     return m_currentValue == nullptr;
   }
@@ -762,26 +757,10 @@ public:
     }
   }
 
-  /// Request that the generator cancel generation of new items.
-  ///
-  /// \return
-  /// Returns true if the request was completed synchronously and the associated
-  /// producer coroutine is now available to be destroyed. In which case the caller
-  /// is expected to call destroy() on the coroutine_handle.
-  /// Returns false if the producer coroutine was not at a suitable suspend-point.
-  /// The coroutine will be destroyed when it next reaches a co_yield or co_return
-  /// statement.
   bool request_cancellation() noexcept {
     const auto previousState = m_state.exchange(state::cancelled, std::memory_order_acq_rel);
-
-    // Not valid to destroy async_generator<T> object if consumer coroutine still suspended
-    // in a co_await for next item.
     assert(previousState != state::value_not_ready_consumer_suspended);
-
-    // A coroutine should only ever be cancelled once, from the destructor of the
-    // owning async_generator<T> object.
     assert(previousState != state::cancelled);
-
     return previousState == state::value_ready_producer_suspended;
   }
 
@@ -792,27 +771,6 @@ private:
   friend class async_generator_yield_operation;
   friend class async_generator_advance_operation;
 
-  // State transition diagram
-  //   VNRCA - value_not_ready_consumer_active
-  //   VNRCS - value_not_ready_consumer_suspended
-  //   VRPA  - value_ready_consumer_active
-  //   VRPS  - value_ready_consumer_suspended
-  //
-  //       A         +---  VNRCA --[C]--> VNRCS   yield_value()
-  //       |         |     |  A           |  A       |   .
-  //       |        [C]   [P] |          [P] |       |   .
-  //       |         |     | [C]          | [C]      |   .
-  //       |         |     V  |           V  |       |   .
-  //  operator++/    |     VRPS <--[P]--- VRPA       V   |
-  //  begin()        |      |              |             |
-  //                 |     [C]            [C]            |
-  //                 |      +----+     +---+             |
-  //                 |           |     |                 |
-  //                 |           V     V                 V
-  //                 +--------> cancelled         ~async_generator()
-  //
-  // [C] - Consumer performs this transition
-  // [P] - Producer performs this transition
   enum class state {
     value_not_ready_consumer_active,
     value_not_ready_consumer_suspended,
@@ -822,9 +780,7 @@ private:
   };
 
   std::atomic<state> m_state;
-
   std::exception_ptr m_exception;
-
   std::experimental::coroutine_handle<> m_consumerCoroutine;
 
 protected:
@@ -864,22 +820,8 @@ inline async_generator_yield_operation async_generator_promise_base::internal_yi
   assert(currentState != state::value_ready_producer_suspended);
 
   if (currentState == state::value_not_ready_consumer_suspended) {
-    // Only need relaxed memory order since we're resuming the
-    // consumer on the same thread.
     m_state.store(state::value_ready_producer_active, std::memory_order_relaxed);
-
-    // Resume the consumer.
-    // It might ask for another value before returning, in which case it'll
-    // transition to value_not_ready_consumer_suspended and we can return from
-    // yield_value without suspending, otherwise we should try to suspend
-    // the producer in which case the consumer will wake us up again
-    // when it wants the next value.
     m_consumerCoroutine.resume();
-
-    // Need to use acquire semantics here since it's possible that the
-    // consumer might have asked for the next value on a different thread
-    // which executed concurrently with the call to m_consumerCoro on the
-    // current thread above.
     currentState = m_state.load(std::memory_order_acquire);
   }
 
@@ -896,20 +838,8 @@ inline bool async_generator_yield_operation::await_suspend(std::experimental::co
     }
 
     if (currentState == state::value_not_ready_consumer_suspended) {
-      // Can get away with using relaxed memory semantics here since we're
-      // resuming the consumer on the current thread.
       m_promise.m_state.store(state::value_ready_producer_active, std::memory_order_relaxed);
-
       m_promise.m_consumerCoroutine.resume();
-
-      // The consumer might have asked for another value before returning, in which case
-      // it'll transition to value_not_ready_consumer_suspended and we can return without
-      // suspending, otherwise we should try to suspend the producer, in which case the
-      // consumer will wake us up again when it wants the next value.
-      //
-      // Need to use acquire semantics here since it's possible that the consumer might
-      // have asked for the next value on a different thread which executed concurrently
-      // with the call to m_consumerCoro.resume() above.
       currentState = m_promise.m_state.load(std::memory_order_acquire);
       if (currentState == state::value_not_ready_consumer_suspended) {
         return false;
@@ -917,29 +847,17 @@ inline bool async_generator_yield_operation::await_suspend(std::experimental::co
     }
   }
 
-  // By this point the consumer has been resumed if required and is now active.
-
   if (currentState == state::value_ready_producer_active) {
-    // Try to suspend the producer.
-    // If we failed to suspend then it's either because the consumer destructed, transitioning
-    // the state to cancelled, or requested the next item, transitioning the state to value_not_ready_consumer_suspended.
     const bool suspendedProducer = m_promise.m_state.compare_exchange_strong(
       currentState, state::value_ready_producer_suspended, std::memory_order_release, std::memory_order_acquire);
     if (suspendedProducer) {
       return true;
     }
-
     if (currentState == state::value_not_ready_consumer_suspended) {
-      // Consumer has asked for the next value.
       return false;
     }
   }
-
   assert(currentState == state::cancelled);
-
-  // async_generator object has been destroyed and we're now at a
-  // co_yield/co_return suspension point so we can just destroy
-  // the coroutine.
   producer.destroy();
 
   return true;
@@ -958,15 +876,8 @@ protected:
     m_producerCoroutine(producerCoroutine) {
     state initialState = promise.m_state.load(std::memory_order_acquire);
     if (initialState == state::value_ready_producer_suspended) {
-      // Can use relaxed memory order here as we will be resuming the producer
-      // on the same thread.
       promise.m_state.store(state::value_not_ready_consumer_active, std::memory_order_relaxed);
-
       producerCoroutine.resume();
-
-      // Need to use acquire memory order here since it's possible that the
-      // coroutine may have transferred execution to another thread and
-      // completed on that other thread before the call to resume() returns.
       initialState = promise.m_state.load(std::memory_order_acquire);
     }
 
@@ -983,8 +894,6 @@ public:
 
     auto currentState = m_initialState;
     if (currentState == state::value_ready_producer_active) {
-      // A potential race between whether consumer or producer coroutine
-      // suspends first. Resolve the race using a compare-exchange.
       if (m_promise->m_state.compare_exchange_strong(
             currentState, state::value_not_ready_consumer_suspended, std::memory_order_release,
             std::memory_order_acquire)) {
@@ -999,20 +908,10 @@ public:
 
       currentState = m_promise->m_state.load(std::memory_order_acquire);
       if (currentState == state::value_ready_producer_suspended) {
-        // Producer coroutine produced a value synchronously.
         return false;
       }
     }
-
     assert(currentState == state::value_not_ready_consumer_active);
-
-    // Try to suspend consumer coroutine, transitioning to value_not_ready_consumer_suspended.
-    // This could be racing with producer making the next value available and suspending
-    // (transition to value_ready_producer_suspended) so we use compare_exchange to decide who
-    // wins the race.
-    // If compare_exchange succeeds then consumer suspended (and we return true).
-    // If it fails then producer yielded next value and suspended and we can return
-    // synchronously without suspended (ie. return false).
     return m_promise->m_state.compare_exchange_strong(
       currentState, state::value_not_ready_consumer_suspended, std::memory_order_release, std::memory_order_acquire);
   }
@@ -1085,8 +984,6 @@ class async_generator_iterator final {
 
 public:
   using iterator_category = std::input_iterator_tag;
-  // Not sure what type should be used for difference_type as we don't
-  // allow calculating difference between two iterators.
   using difference_type = std::size_t;
   using value_type = std::remove_reference_t<T>;
   using reference = std::add_lvalue_reference_t<T>;
@@ -1123,7 +1020,6 @@ private:
 template <typename T>
 async_generator_iterator<T>& async_generator_increment_operation<T>::await_resume() {
   if (m_promise->finished()) {
-    // Update iterator to end()
     m_iterator = async_generator_iterator<T>{ nullptr };
     m_promise->rethrow_if_unhandled_exception();
   }
@@ -1150,10 +1046,8 @@ public:
 
   async_generator_iterator<T> await_resume() {
     if (m_promise == nullptr) {
-      // Called begin() on the empty generator.
       return async_generator_iterator<T>{ nullptr };
     } else if (m_promise->finished()) {
-      // Completed without yielding any values.
       m_promise->rethrow_if_unhandled_exception();
       return async_generator_iterator<T>{ nullptr };
     }

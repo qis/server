@@ -27,8 +27,13 @@ public:
   net::async recv() noexcept {
     const auto self = shared_from_this();
     try {
-      for co_await(const auto& request : net::http::recv(connection_)) {
-        fmt::print("{}\n", request);
+      for co_await(auto& request : net::http::recv(connection_)) {
+        fmt::print("{}", request);
+        fmt::print("\n===============================\n");
+        for co_await(const auto& data : request.recv()) {
+          fmt::print("{}", data);
+        }
+        fmt::print("\n===============================\n");
         send(g_response);
       }
     }
