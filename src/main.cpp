@@ -11,12 +11,6 @@
 
 // clang-format off
 
-static std::string g_headers =
-  "Server: deus/1.0.0\r\n"
-  "Connection: keep-alive\r\n"
-  "Content-Type: text/plain\r\n"
-  "Content-Length: 0\r\n\r\n";
-
 class session : public std::enable_shared_from_this<session> {
 public:
   session(net::connection connection) noexcept : connection_(std::move(connection)) {
