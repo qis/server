@@ -48,7 +48,7 @@ private:
         "Content-Length: 0\r\n\r\n",
         request.version, request.keep_alive ? "keep-alive" : "close"
       );
-      co_await connection_->send(response);
+      (void)co_await connection_->send(response);
       if (!request.keep_alive) {
         connection_->close();
       }
