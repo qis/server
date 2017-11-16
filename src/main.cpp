@@ -94,9 +94,9 @@ int main(int argc, char* argv[]) {
     net::signal(SIGPIPE);
 
     // Create TLS Server.
-    net::server server(service);
+    net::tls::server server(service);
     server.create(host, port, net::type::tcp);
-    //server.config("res/cer/ca.cer", "res/cer/server.cer", "res/cer/server.key", "h2,http/1.1");
+    server.config("res/cer/ca.cer", "res/cer/server.cer", "res/cer/server.key", "h2,http/1.1");
 
     // Drop privileges.
     net::drop("nobody");

@@ -2,6 +2,7 @@ MAKEFLAGS += --no-print-directory
 
 CC	!= which clang-devel || which clang
 CXX	!= which clang++-devel || which clang++
+DBG	!= whilch lldb || which gdb
 CMAKE	:= CC=$(CC) CXX=$(CXX) cmake -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON
 BUILD	!= echo $(PWD) | tr '/' '-' | sed 's|^-|/var/build/|'
 PROJECT	!= grep "^project" CMakeLists.txt | cut -c9- | cut -d " " -f1 | tr "[:upper:]" "[:lower:]"
@@ -11,11 +12,10 @@ SOURCES	!= find src -type f -name '*.cpp'
 all: debug
 
 run: debug
-	@sudo build/llvm/debug/server
+	@build/llvm/debug/server
 
 dbg: debug
-	@#lldb -o run build/llvm/debug/server
-	@gdb -x run build/llvm/debug/server
+	@$(DBG) build/llvm/debug/server
 
 test: debug
 	@cd build/llvm/debug && ctest
