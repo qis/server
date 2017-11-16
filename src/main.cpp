@@ -24,17 +24,19 @@ public:
   session(net::connection connection) noexcept : connection_(std::move(connection)) {
   }
 
+  net::async handle(net::http::request& request) {
+    for co_await(const auto& data : request.recv()) {
+      (void)data;
+    }
+    send(g_response);
+    co_return;
+  }
+
   net::async recv() noexcept {
     const auto self = shared_from_this();
     try {
       for co_await(auto& request : net::http::recv(connection_)) {
-        fmt::print("{}", request);
-        fmt::print("\n===============================\n");
-        for co_await(const auto& data : request.recv()) {
-          fmt::print("{}", data);
-        }
-        fmt::print("\n===============================\n");
-        send(g_response);
+        handle(request);
       }
     }
     catch (const std::exception& e) {

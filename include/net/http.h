@@ -78,8 +78,7 @@ private:
   void resume(std::string_view data);
   void reset();
 
-  net::single_consumer_event received_;  // TODO: Fix this!
-  net::single_consumer_event consumed_;  // TODO: Fix this!
+  net::single_consumer_event event_;
   std::string_view data_;
 
   friend class parser_v1;

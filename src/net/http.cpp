@@ -11,11 +11,10 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
   if (!co_await socket->handshake()) {
     co_return;
   }
+
   //if (const auto alpn = socket->alpn(); alpn && std::string_view(alpn) == "h2") {
-  //} else {
   //}
 
-  // TODO: Fix this!
   parser_v1 parser;
   while (true) {
     const auto& data = co_await socket->recv(buffer.data(), buffer.size());
@@ -25,12 +24,6 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
         parser.get().closed = true;
         co_yield parser.get();
       }
-      if (parser.consume()) {
-        fmt::print("consuming on close\n");
-        co_await parser.event();
-        parser.event().reset();
-        fmt::print("consumed on close\n");
-      }
       break;
     }
     auto buffer_data = data.data();
@@ -38,14 +31,7 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
     while (buffer_size) {
       const auto bytes = parser.parse(buffer_data, buffer_size);
       if (parser.ready()) {
-        fmt::print("yielding\n");
         co_yield parser.get();
-      }
-      if (parser.consume()) {
-        fmt::print("consuming\n");
-        co_await parser.event();
-        parser.event().reset();
-        fmt::print("consumed\n");
       }
       buffer_data += bytes;
       buffer_size -= bytes;
@@ -55,28 +41,20 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
 }
 
 net::async_generator<std::string_view> request::recv() noexcept {
-  // TODO: Fix this!
   while (true) {
-    fmt::print("awaiting\n");
-    co_await received_;
-    received_.reset();
-    fmt::print("awaited\n");
+    co_await event_;
+    event_.reset();
     if (data_.empty()) {
       break;
     }
     co_yield data_;
-    fmt::print("set consumed\n");
-    consumed_.set();
   }
-  fmt::print("set consumed on close\n");
-  consumed_.set();
   co_return;
 }
 
 void request::resume(std::string_view data) {
-  // TODO: Fix this!
   data_ = data;
-  received_.set();
+  event_.set();
 }
 
 void request::reset() {
@@ -87,6 +65,7 @@ void request::reset() {
   content_length = 0;
   keep_alive = false;
   closed = false;
+  event_.reset();
 }
 
 void format_arg(fmt::BasicFormatter<char>& formatter, const char*& format, const method& method) {
