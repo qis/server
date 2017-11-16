@@ -52,37 +52,47 @@ enum class header {
   range,
 };
 
-class request {
+class body {
 public:
-  request() = default;
+  body() = default;
 
-  request(request&& other) = delete;
-  request& operator=(request&& other) = delete;
+  body(body&& other) = delete;
+  body& operator=(body&& other) = delete;
 
-  request(const request& other) = delete;
-  request& operator=(const request& other) = delete;
+  body(const body& other) = delete;
+  body& operator=(const body& other) = delete;
 
-  ~request() = default;
+  ~body() = default;
 
-  method method = method::none;
-  std::string path;
-  version version;
-  std::unordered_multimap<header, std::string> headers;
-  std::size_t content_length = 0;
-  bool keep_alive = false;
-  bool closed = false;
-
-  net::async_generator<std::string_view> recv() noexcept;
+  net::async_generator<std::string_view> recv();
 
 private:
   void resume(std::string_view data);
-  void reset();
 
   net::single_consumer_event event_;
   std::string_view data_;
 
   friend class parser_v1;
   friend class parser_v2;
+};
+
+class request {
+public:
+  request(body& body);
+
+  method method = method::none;
+  std::string path;
+  version version;
+  bool closed = false;
+  bool keep_alive = false;
+  std::size_t content_length = 0;
+  std::unordered_multimap<header, std::string> headers;
+
+  net::async_generator<std::string_view> recv();
+  void reset();
+
+private:
+  std::reference_wrapper<body> body_;
 };
 
 net::async_generator<request> recv(net::connection& socket, std::size_t size = 4096);

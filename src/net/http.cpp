@@ -5,6 +5,40 @@
 
 namespace net::http {
 
+net::async_generator<std::string_view> body::recv() {
+  while (true) {
+    co_await event_;
+    event_.reset();
+    if (data_.empty()) {
+      break;
+    }
+    co_yield data_;
+  }
+  co_return;
+}
+
+void body::resume(std::string_view data) {
+  data_ = data;
+  event_.set();
+}
+
+request::request(net::http::body& body) : body_(body) {
+}
+
+net::async_generator<std::string_view> request::recv() {
+  return body_.get().recv();
+}
+
+void request::reset() {
+  method = method::none;
+  path.clear();
+  version = {};
+  closed = false;
+  keep_alive = false;
+  content_length = 0;
+  headers.clear();
+}
+
 net::async_generator<request> recv(net::connection& socket, std::size_t size) {
   std::vector<char> buffer;
   buffer.resize(size);
@@ -38,34 +72,6 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
     }
   }
   co_return;
-}
-
-net::async_generator<std::string_view> request::recv() noexcept {
-  while (true) {
-    co_await event_;
-    event_.reset();
-    if (data_.empty()) {
-      break;
-    }
-    co_yield data_;
-  }
-  co_return;
-}
-
-void request::resume(std::string_view data) {
-  data_ = data;
-  event_.set();
-}
-
-void request::reset() {
-  method = method::none;
-  path.clear();
-  version = {};
-  headers.clear();
-  content_length = 0;
-  keep_alive = false;
-  closed = false;
-  event_.reset();
 }
 
 void format_arg(fmt::BasicFormatter<char>& formatter, const char*& format, const method& method) {

@@ -8,7 +8,7 @@ namespace net::http {
 
 class parser_v1 final : public http_parser {
 public:
-  parser_v1() noexcept : http_parser({}) {
+  parser_v1() noexcept : http_parser({}), body_(), request_(body_) {
     http_parser_init(this, HTTP_REQUEST);
     settings_.on_message_begin = [](http_parser* parser) -> int {
       return static_cast<parser_v1*>(parser)->on_message_begin();
@@ -123,13 +123,13 @@ private:
   }
 
   int on_body(const char* data, size_t size) {
-    request_.resume({ data, size });
+    body_.resume({ data, size });
     http_parser_pause(this, 1);
     return 0;
   }
 
   int on_message_complete() {
-    request_.resume({});
+    body_.resume({});
     http_parser_pause(this, 1);
     return 0;
   }
@@ -175,6 +175,7 @@ private:
   bool query_ = false;
   std::string field_;
   std::string value_;
+  net::http::body body_;
   net::http::request request_;
   http_parser_settings settings_ = {};
 };

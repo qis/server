@@ -6,37 +6,27 @@
 #include <array>
 #include <mutex>
 
+// nc 127.0.0.1 8080
 // openssl s_client -alpn h2 -connect 127.0.0.1:8080
 
-const std::string g_response =
-  "HTTP/1.1 200 OK\r\n"
-  "Server: deus/1.0.0\r\n"
-  "Content-Type: text/plain\r\n"
-  "Content-Length: 2\r\n"
-  "Connection: keep-alive\r\n"
-  "\r\n"
-  "ok";
-
 // clang-format off
+
+static std::string g_headers =
+  "Server: deus/1.0.0\r\n"
+  "Connection: keep-alive\r\n"
+  "Content-Type: text/plain\r\n"
+  "Content-Length: 0\r\n\r\n";
 
 class session : public std::enable_shared_from_this<session> {
 public:
   session(net::connection connection) noexcept : connection_(std::move(connection)) {
   }
 
-  net::async handle(net::http::request& request) {
-    for co_await(const auto& data : request.recv()) {
-      (void)data;
-    }
-    send(g_response);
-    co_return;
-  }
-
   net::async recv() noexcept {
     const auto self = shared_from_this();
     try {
       for co_await(auto& request : net::http::recv(connection_)) {
-        handle(request);
+        handle(std::move(request));
       }
     }
     catch (const std::exception& e) {
@@ -45,11 +35,29 @@ public:
     co_return;
   }
 
-  net::async send(std::string data) noexcept {
+private:
+  net::async handle(net::http::request request) noexcept {
     const auto self = shared_from_this();
+    const auto lock = co_await mutex_.scoped_lock_async();
     try {
-      net::async_mutex_lock lock = co_await mutex_.scoped_lock_async();
-      (void) co_await connection_->send(data);
+      for co_await(const auto& data : request.recv()) {
+        (void)data;
+      }
+      if (request.closed) {
+        co_return;
+      }
+      auto response = fmt::format(
+        "{} 200 OK\r\n"
+        "Server: deus/1.0.0\r\n"
+        "Connection: {}\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: 0\r\n\r\n",
+        request.version, request.keep_alive ? "keep-alive" : "close"
+      );
+      co_await connection_->send(response);
+      if (!request.keep_alive) {
+        connection_->close();
+      }
     }
     catch (const std::exception& e) {
       fmt::print("{}: {}\n", connection_, e.what());
@@ -57,7 +65,6 @@ public:
     co_return;
   }
 
-private:
   net::async_mutex mutex_;
   net::connection connection_;
 };
