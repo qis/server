@@ -1,11 +1,21 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <net/http.h>
 #include <net/tls/server.h>
 #include <net/utility.h>
 #include <array>
 #include <mutex>
 
 // openssl s_client -alpn h2 -connect 127.0.0.1:8080
+
+const std::string g_response =
+  "HTTP/1.1 200 OK\r\n"
+  "Server: deus/1.0.0\r\n"
+  "Content-Type: text/plain\r\n"
+  "Content-Length: 2\r\n"
+  "Connection: keep-alive\r\n"
+  "\r\n"
+  "ok";
 
 // clang-format off
 
@@ -17,8 +27,9 @@ public:
   net::async recv() noexcept {
     const auto self = shared_from_this();
     try {
-      for co_await(const auto& data : connection_->recv()) {
-        send(std::string(data));
+      for co_await(const auto& request : net::http::recv(connection_)) {
+        fmt::print("{}\n", request);
+        send(g_response);
       }
     }
     catch (const std::exception& e) {
@@ -75,9 +86,9 @@ int main(int argc, char* argv[]) {
     net::signal(SIGPIPE);
 
     // Create TLS Server.
-    net::tls::server server(service);
+    net::server server(service);
     server.create(host, port, net::type::tcp);
-    server.config("res/cer/ca.cer", "res/cer/server.cer", "res/cer/server.key", "h2,http/1.1");
+    //server.config("res/cer/ca.cer", "res/cer/server.cer", "res/cer/server.key", "h2,http/1.1");
 
     // Drop privileges.
     net::drop("nobody");

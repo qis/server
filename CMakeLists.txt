@@ -49,7 +49,11 @@ endif()
 file(GLOB_RECURSE headers include/net/*.h)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/include/net PREFIX include FILES ${headers})
 
-file(GLOB sources src/net/*.h src/net/*.cpp src/net/tls/*.cpp src/net/${NET_SYSTEM}/*.cpp)
+file(GLOB sources
+  src/net/*.h src/net/*.cpp
+  src/net/tls/*.h src/net/tls/*.cpp
+  src/net/http/*.h src/net/http/*.cpp
+  src/net/${NET_SYSTEM}/*.cpp)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src/net PREFIX src FILES ${sources})
 
 add_library(net STATIC ${headers} ${sources})
