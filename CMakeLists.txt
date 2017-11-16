@@ -64,10 +64,10 @@ if(WIN32)
   target_link_libraries(net PUBLIC ws2_32 mswsock)
 endif()
 
-find_package(fmt REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/fmt)
+find_package(fmt REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/fmt NO_DEFAULT_PATH)
 target_link_libraries(net PUBLIC fmt::fmt)
 
-find_package(tls REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tls)
+find_package(tls REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tls NO_DEFAULT_PATH)
 target_link_libraries(net PRIVATE tls::tls)
 
 #install(DIRECTORY include/net DESTINATION include FILES_MATCHING PATTERN "*.h")
