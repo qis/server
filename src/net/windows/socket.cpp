@@ -244,8 +244,6 @@ net::task<std::optional<std::string>> socket::handshake() {
   co_return std::make_optional<std::string>();
 }
 
-// clang-format off
-
 net::task<std::string_view> socket::recv(char* data, std::size_t size) {
   return impl_ ? impl_->recv(*this, data, size) : native_recv(*this, data, size);
 }
@@ -253,8 +251,6 @@ net::task<std::string_view> socket::recv(char* data, std::size_t size) {
 net::task<bool> socket::send(std::string_view data) {
   return impl_ ? impl_->send(*this, data) : native_send(*this, data);
 }
-
-// clang-format on
 
 std::error_code socket::close() noexcept {
   if (valid()) {

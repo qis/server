@@ -57,8 +57,6 @@ void server::create(std::string host, std::string port, net::type type) {
   reset(socket.release());
 }
 
-// clang-format off
-
 net::async_generator<net::socket> server::accept(std::size_t backlog) {
   constexpr int size = sizeof(struct sockaddr_storage) + 16;
   if (::listen(as<SOCKET>(), backlog > 0 ? static_cast<int>(backlog) : SOMAXCONN) == SOCKET_ERROR) {
@@ -96,8 +94,6 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
   }
   co_return;
 }
-
-// clang-format on
 
 std::error_code server::close() noexcept {
   if (valid()) {

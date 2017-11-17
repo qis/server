@@ -24,8 +24,6 @@ void server::create(std::string host, std::string port, net::type type) {
   reset(socket.release());
 }
 
-// clang-format off
-
 net::async_generator<net::socket> server::accept(std::size_t backlog) {
   if (::listen(handle_, backlog > 0 ? static_cast<int>(backlog) : SOMAXCONN) < 0) {
     throw exception("listen", errno);
@@ -53,8 +51,6 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
   }
   co_return;
 }
-
-// clang-format on
 
 std::error_code server::close() noexcept {
   if (valid()) {
