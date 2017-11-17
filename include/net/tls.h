@@ -12,18 +12,18 @@ struct tls_config;
 namespace net {
 
 constexpr auto ecdsa_cipher_list =
-"ECDHE-ECDSA-AES256-GCM-SHA384:"  // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AESGCM(256)    Mac=AEAD
-"ECDHE-ECDSA-CHACHA20-POLY1305:"  // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=ChaCha20(256)  Mac=AEAD
-"ECDHE-ECDSA-AES128-GCM-SHA256:"  // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AESGCM(128)    Mac=AEAD
-"ECDHE-ECDSA-AES256-SHA384:"      // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AES(256)       Mac=SHA384
-"ECDHE-ECDSA-AES128-SHA256:";     // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AES(128)       Mac=SHA256
+  "ECDHE-ECDSA-AES256-GCM-SHA384:"  // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AESGCM(256)    Mac=AEAD
+  "ECDHE-ECDSA-CHACHA20-POLY1305:"  // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=ChaCha20(256)  Mac=AEAD
+  "ECDHE-ECDSA-AES128-GCM-SHA256:"  // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AESGCM(128)    Mac=AEAD
+  "ECDHE-ECDSA-AES256-SHA384:"      // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AES(256)       Mac=SHA384
+  "ECDHE-ECDSA-AES128-SHA256:";     // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AES(128)       Mac=SHA256
 
 constexpr auto rsa_cipher_list =
-"ECDHE-RSA-AES256-GCM-SHA384:"  // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AESGCM(256)    Mac=AEAD
-"ECDHE-RSA-CHACHA20-POLY1305:"  // TLSv1.2  Kx=ECDH  Au=RSA    Enc=ChaCha20(256)  Mac=AEAD
-"ECDHE-RSA-AES128-GCM-SHA256:"  // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AESGCM(128)    Mac=AEAD
-"ECDHE-RSA-AES256-SHA384:"      // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AES(256)       Mac=SHA384
-"ECDHE-RSA-AES128-SHA256:";     // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AES(128)       Mac=SHA256
+  "ECDHE-RSA-AES256-GCM-SHA384:"  // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AESGCM(256)    Mac=AEAD
+  "ECDHE-RSA-CHACHA20-POLY1305:"  // TLSv1.2  Kx=ECDH  Au=RSA    Enc=ChaCha20(256)  Mac=AEAD
+  "ECDHE-RSA-AES128-GCM-SHA256:"  // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AESGCM(128)    Mac=AEAD
+  "ECDHE-RSA-AES256-SHA384:"      // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AES(256)       Mac=SHA384
+  "ECDHE-RSA-AES128-SHA256:";     // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AES(128)       Mac=SHA256
 
 void tls_deleter(::tls* ptr) noexcept;
 void tls_config_deleter(::tls_config* ptr) noexcept;

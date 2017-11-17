@@ -5,9 +5,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <mswsock.h>
-#include <tls.h>
 #include <array>
-#include <fstream>
 
 namespace net {
 namespace {
@@ -71,10 +69,9 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
   std::array<char, size * 2> buffer;
   while (true) {
     net::socket socket(service_);
+    socket.create(family, type);
     if (tls_) {
-      socket.create(family, type, tls_);
-    } else {
-      socket.create(family, type);
+      socket.accept(tls_);
     }
     if (!CreateIoCompletionPort(socket.as<HANDLE>(), service_.get().as<HANDLE>(), 0, 0)) {
       throw exception("create connection completion port", GetLastError());

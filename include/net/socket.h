@@ -42,8 +42,8 @@ public:
   // Creates tls/udp socket.
   void create(net::family family, net::type type);
 
-  // Creates tls/dtls socket.
-  void create(net::family family, net::type type, const tls& tls);
+  // Accepts tls/dtls connection.
+  void accept(const tls& tls);
 
   // Sets socket option.
   std::error_code set(net::option option, bool enable) noexcept;

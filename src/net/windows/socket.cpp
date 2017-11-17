@@ -214,10 +214,8 @@ void socket::create(net::family family, net::type type) {
   *this = socket(service_, handle);
 }
 
-void socket::create(net::family family, net::type type, const tls& tls) {
-  auto impl = std::make_unique<socket::impl>(tls);
-  create(family, type);
-  impl_ = std::move(impl);
+void socket::accept(const tls& tls) {
+  impl_ = std::make_unique<socket::impl>(tls);
 }
 
 std::error_code socket::set(net::option option, bool enable) noexcept {

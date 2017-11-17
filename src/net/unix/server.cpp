@@ -7,7 +7,7 @@
 
 namespace net {
 
-void server::create(const char* host, const char* port, net::type type) {
+void server::create(std::string host, std::string port, net::type type) {
   if (!service_.get()) {
     throw exception("create server", std::errc::bad_file_descriptor);
   }
@@ -26,7 +26,7 @@ void server::create(const char* host, const char* port, net::type type) {
 
 // clang-format off
 
-net::async_generator<net::connection> server::accept(std::size_t backlog) {
+net::async_generator<net::socket> server::accept(std::size_t backlog) {
   if (::listen(handle_, backlog > 0 ? static_cast<int>(backlog) : SOMAXCONN) < 0) {
     throw exception("listen", errno);
   }
@@ -35,15 +35,18 @@ net::async_generator<net::connection> server::accept(std::size_t backlog) {
   event event(service_.get().value(), handle_, NET_TLS_RECV);
   while (true) {
     auto socklen = static_cast<socklen_t>(sizeof(storage));
-    auto socket = std::make_shared<net::socket>(service_, ::accept4(handle_, addr, &socklen, SOCK_NONBLOCK));
-    if (!socket->valid()) {
+    net::socket socket(service_, ::accept4(handle_, addr, &socklen, SOCK_NONBLOCK));
+    if (!socket) {
       if (errno != EAGAIN) {
         continue;
       }
       co_await event;
-      socket->reset(::accept4(handle_, addr, &socklen, SOCK_NONBLOCK));
-      if (!socket->valid()) {
+      socket.reset(::accept4(handle_, addr, &socklen, SOCK_NONBLOCK));
+      if (!socket) {
         continue;
+      }
+      if (tls_) {
+        socket.accept(tls_);
       }
     }
     co_yield socket;
