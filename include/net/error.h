@@ -1,4 +1,5 @@
 #pragma once
+#include <fmt/format.h>
 #include <exception>
 #include <stdexcept>
 #include <string>
@@ -17,7 +18,12 @@ public:
   }
 
   template <typename T>
-  exception(const std::string& message, T code, const std::error_category& category = std::system_category()) noexcept :
+  exception(const std::string& message, T code) noexcept :
+    std::domain_error(format(message, code)) {
+  }
+
+  template <typename T>
+  exception(const std::string& message, T code, const std::error_category& category) noexcept :
     std::domain_error(format(message, code, category)) {
   }
 
@@ -30,15 +36,22 @@ private:
   }
 
   template <typename T>
-  static std::string format(const std::string& message, T code, const std::error_category& category) {
+  static std::string format(const std::string& message, T code) {
     if constexpr (std::is_same_v<T, std::error_code>) {
-      return '[' + std::to_string(code.value()) + "] " + message + ": " + code.category().message(code.value());
-    } else if constexpr (std::is_unsigned_v<T>) {
-      return '[' + std::to_string(static_cast<std::uintptr_t>(code)) + "] " + message + ": " +
-        category.message(static_cast<int>(code));
+      return format(message, code.value(), code.category());
     } else {
-      return '[' + std::to_string(static_cast<std::intptr_t>(code)) + "] " + message + ": " +
-        category.message(static_cast<int>(code));
+      return format(message, code, std::system_category());
+    }
+  }
+
+  template <typename T>
+  static std::string format(const std::string& message, T code, const std::error_category& category) {
+    const auto name = category.name();
+    const auto text = category.message(static_cast<int>(code));
+    if constexpr (std::is_unsigned_v<T>) {
+      return fmt::format("[{}:{}] {}: {}", name, static_cast<std::uintptr_t>(code), message, text);
+    } else {
+      return fmt::format("[{}:{}] {}: {}", name, static_cast<std::intptr_t>(code), message, text);
     }
   }
 };
