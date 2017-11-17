@@ -21,7 +21,7 @@ using event_base = OVERLAPPED;
 #elif NET_USE_EPOLL
 using event_base = epoll_event;
 #elif NET_USE_KQUEUE
-using event_base = kevent;
+using event_base = struct kevent;
 #endif
 
 class event final : public event_base {
@@ -32,13 +32,13 @@ public:
   event() noexcept : event_base({}) {
   }
 #elif NET_USE_EPOLL
-  event(int epoll, int socket, uint32_t filter) noexcept : epoll_event({}), epoll_(epoll), socket_(socket) {
+  event(int epoll, int socket, uint32_t filter) noexcept : event_base({}), epoll_(epoll), socket_(socket) {
     events = filter;
     data.fd = socket;
     data.ptr = this;
   }
 #elif NET_USE_KQUEUE
-  event(int kqueue, int socket, short filter) noexcept : kevent({}), kqueue_(kqueue) {
+  event(int kqueue, int socket, short filter) noexcept : event_base({}), kqueue_(kqueue) {
     const auto ev = static_cast<kevent*>(this);
     const auto ident = static_cast<uintptr_t>(socket);
     EV_SET(ev, ident, filter, EV_ADD | EV_ONESHOT, 0, 0, this);
