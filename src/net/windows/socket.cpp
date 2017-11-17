@@ -27,6 +27,7 @@ net::task<std::string_view> native_recv(handle& handle, char* data, std::size_t 
       if (const auto code = WSAGetLastError()) {
         throw exception("async recv", code);
       }
+      co_return std::string_view{};
     }
   }
   co_return std::string_view{ buffer.buf, bytes };

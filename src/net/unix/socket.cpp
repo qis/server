@@ -25,6 +25,9 @@ net::task<std::string_view> native_recv(net::service& service, int socket, char*
       throw exception("async recv", errno);
     }
   }
+  if (rv == 0) {
+    co_return std::string_view{};
+  }
   co_return std::string_view{ buffer_data, static_cast<std::size_t>(rv) };
 }
 
