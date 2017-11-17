@@ -95,10 +95,14 @@ int main(int argc, char* argv[]) {
     // Trap SIGPIPE signals.
     net::signal(SIGPIPE);
 
-    // Create TLS Server.
+    // Create TCP server.
     net::server server(service);
     server.create(host, port, net::type::tcp);
-    //server.create(host, port, net::type::tcp, cert, alpn);
+
+    // Enable TLS support.
+    if (!cert.empty()) {
+      server.configure(cert, alpn);
+    }
 
     // Drop privileges.
     net::drop("nobody");

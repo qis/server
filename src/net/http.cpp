@@ -42,7 +42,11 @@ void request::reset() {
 net::async_generator<request> recv(net::socket& socket, std::size_t size) {
   std::vector<char> buffer;
   buffer.resize(size);
-  if (!co_await socket.handshake()) {
+
+  std::string alpn;
+  if (const auto rv = co_await socket.handshake()) {
+    alpn = rv.value();
+  } else {
     co_return;
   }
 

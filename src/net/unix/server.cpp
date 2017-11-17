@@ -7,7 +7,7 @@
 
 namespace net {
 
-void server::create(std::string host, std::string port, net::type type) {
+void server::create(const std::string& host, const std::string& port, net::type type) {
   if (!service_.get()) {
     throw exception("create server", std::errc::bad_file_descriptor);
   }

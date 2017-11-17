@@ -76,26 +76,26 @@ public:
       const auto rv = ::tls_handshake(tls_.get());
       if (rv == 0) {
         if (const auto alpn = tls_conn_alpn_selected(tls_.get())) {
-          co_return std::make_optional<std::string>(alpn);
+          co_return alpn;
         }
         break;
       }
       if (rv == TLS_WANT_POLLIN) {
         recv_ = co_await native_recv(handle, buffer_.data(), buffer_.size());
         if (recv_.empty()) {
-          break;
+          co_return std::optional<std::string>{};
         }
         continue;
       }
       if (rv == TLS_WANT_POLLOUT) {
         if (!co_await native_send(handle, send_)) {
-          break;
+          co_return std::optional<std::string>{};
         }
         continue;
       }
       throw exception("tls handshake", ::tls_error(tls_.get()));
     }
-    co_return std::optional<std::string>{};
+    co_return std::string{};
   }
 
   net::task<std::string_view> recv(handle& handle, char* data, std::size_t size) {
@@ -241,7 +241,7 @@ net::task<std::optional<std::string>> socket::handshake() {
   if (impl_) {
     co_return co_await impl_->handshake(*this);
   }
-  co_return std::make_optional<std::string>();
+  co_return std::string{};
 }
 
 net::task<std::string_view> socket::recv(char* data, std::size_t size) {

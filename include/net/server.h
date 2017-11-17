@@ -22,11 +22,15 @@ public:
   ~server();
 
   // Creates and binds a tcp/udp socket.
-  void create(std::string host, std::string port, net::type type);
+  void create(const std::string& host, const std::string& port, net::type type);
 
-  // Creates and binds a tls/dtls socket.
-  // The certificate file contents must be: private key, server cert, intermediate ca cert, root ca cert.
-  void create(std::string host, std::string port, net::type type, std::string cert, std::string alpn = {});
+  // Configures tls/dtls.
+  // The certificate file must be in PEM format and have the following order:
+  // 1. Private key.
+  // 2. Server certificate.
+  // 3. Intermediate certificates (optional).
+  // 4. Root ca certificates.
+  void configure(const std::string& cert, const std::string& alpn = {});
 
   // Accepts client connections.
   net::async_generator<net::socket> accept(std::size_t backlog = 0);

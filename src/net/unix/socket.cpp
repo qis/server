@@ -63,7 +63,7 @@ public:
       const auto rv = ::tls_handshake(tls_.get());
       if (rv == 0) {
         if (const auto alpn = tls_conn_alpn_selected(tls_.get())) {
-          co_return std::make_optional<std::string>(alpn);
+          co_return alpn;
         }
         break;
       }
@@ -77,7 +77,7 @@ public:
       }
       throw exception("tls handshake", ::tls_error(tls_.get()));
     }
-    co_return std::optional<std::string>{};
+    co_return std::string{};
   }
 
   net::task<std::string_view> recv(char* data, std::size_t size) {
@@ -191,7 +191,7 @@ net::task<std::optional<std::string>> socket::handshake() {
   if (impl_) {
     co_return co_await impl_->handshake();
   }
-  co_return std::make_optional<std::string>();
+  co_return std::string{};
 }
 
 net::task<std::string_view> socket::recv(char* data, std::size_t size) {

@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <string_view>
 
 extern "C" {
 
@@ -41,33 +42,26 @@ inline tls_config make_tls_config(::tls_config* ptr = nullptr) noexcept {
 
 class certificate {
 public:
-  certificate() = default;
-  certificate(const std::string& filename);
+  certificate() noexcept;
 
-  certificate(certificate&& other);
-  certificate& operator=(certificate&& other);
+  certificate(certificate&& other) = delete;
+  certificate& operator=(certificate&& other) = delete;
 
   certificate(const certificate& other) = delete;
   certificate& operator=(const certificate& other) = delete;
 
   ~certificate();
 
-  const char* ca() const noexcept {
-    return ca_.data();
-  }
+  void load(const std::string& filename);
+  void reset() noexcept;
 
-  const char* cer() const noexcept {
-    return cer_.data();
-  }
-
-  const char* key() const noexcept {
-    return key_.data();
-  }
+  std::string_view ca() const noexcept;
+  std::string_view cer() const noexcept;
+  std::string_view key() const noexcept;
 
 private:
-  std::string ca_;
-  std::string cer_;
-  std::string key_;
+  class impl;
+  std::unique_ptr<impl> impl_;
 };
 
 }  // namespace net
