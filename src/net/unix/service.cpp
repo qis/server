@@ -2,7 +2,6 @@
 #include <net/event.h>
 #ifdef __linux__
 #include <sched.h>
-#include <sys/ioctl.h>
 #else
 #include <sys/param.h>
 #include <sys/cpuset.h>
@@ -71,13 +70,6 @@ void service::run(int processor) {
 #ifdef NET_USE_EPOLL
       auto data = ev.data.ptr;
       auto size = 1;
-      //int size = 0;
-      //if (::ioctl(ev.data.fd, FIONREAD, &size) < 0) {
-      //  size = 0;
-      //}
-      //if (size < 0) {
-      //  size = 0;
-      //}
 #else
       const auto data = ev.udata;
       const auto size = ev.data;

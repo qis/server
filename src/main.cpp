@@ -21,7 +21,9 @@ public:
   net::async recv() noexcept {
     const auto self = shared_from_this();
     try {
+      fmt::print("recv:");
       for co_await(auto& request : net::http::recv(socket_)) {
+        fmt::print(" ok\n");
         handle(std::move(request));
       }
     }

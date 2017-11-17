@@ -30,7 +30,6 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
   }
   struct sockaddr_storage storage;
   auto addr = reinterpret_cast<struct sockaddr*>(&storage);
-  event event(service_.get().value(), handle_, NET_TLS_RECV);
   while (true) {
     auto socklen = static_cast<socklen_t>(sizeof(storage));
     net::socket socket(service_, ::accept4(handle_, addr, &socklen, SOCK_NONBLOCK));
@@ -38,7 +37,9 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
       if (errno != EAGAIN) {
         continue;
       }
-      (void)co_await event;
+      fmt::print("accepting ...\n");
+      const auto available = co_await event(service_.get().value(), handle_, NET_TLS_RECV);
+      fmt::print("accepted: {}\n", available);
       socket.reset(::accept4(handle_, addr, &socklen, SOCK_NONBLOCK));
       if (!socket) {
         continue;
