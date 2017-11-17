@@ -39,10 +39,10 @@ void request::reset() {
   headers.clear();
 }
 
-net::async_generator<request> recv(net::connection& socket, std::size_t size) {
+net::async_generator<request> recv(net::socket& socket, std::size_t size) {
   std::vector<char> buffer;
   buffer.resize(size);
-  if (!co_await socket->handshake()) {
+  if (!co_await socket.handshake()) {
     co_return;
   }
 
@@ -51,7 +51,7 @@ net::async_generator<request> recv(net::connection& socket, std::size_t size) {
 
   parser_v1 parser;
   while (true) {
-    const auto& data = co_await socket->recv(buffer.data(), buffer.size());
+    const auto& data = co_await socket.recv(buffer.data(), buffer.size());
     if (data.empty()) {
       parser.parse(nullptr, 0);
       if (parser.ready()) {

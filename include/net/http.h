@@ -1,7 +1,10 @@
 #pragma once
-#include <net/server.h>
+#include <net/async.h>
+#include <net/socket.h>
 #include <fmt/format.h>
 #include <unordered_map>
+#include <string>
+#include <string_view>
 
 namespace net::http {
 
@@ -95,7 +98,7 @@ private:
   std::reference_wrapper<body> body_;
 };
 
-net::async_generator<request> recv(net::connection& socket, std::size_t size = 4096);
+net::async_generator<request> recv(net::socket& socket, std::size_t size = 4096);
 
 void format_arg(fmt::BasicFormatter<char>& formatter, const char*& format, const method& method);
 void format_arg(fmt::BasicFormatter<char>& formatter, const char*& format, const version& version);

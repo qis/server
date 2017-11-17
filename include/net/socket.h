@@ -2,10 +2,11 @@
 #include <net/async.h>
 #include <net/error.h>
 #include <net/service.h>
+#include <net/tls.h>
+#include <fmt/format.h>
 #include <functional>
 #include <memory>
 #include <string_view>
-#include <vector>
 
 namespace net {
 
@@ -27,56 +28,40 @@ enum class option {
 
 class socket : public handle {
 public:
-  explicit socket(net::service& service) noexcept : service_(service) {
-  }
+  explicit socket(net::service& service) noexcept;
+  explicit socket(net::service& service, handle_type value) noexcept;
 
-  explicit socket(net::service& service, handle_type value) noexcept : handle(value), service_(service) {
-  }
-
-  socket(socket&& other) noexcept = default;
-  socket& operator=(socket&& other) noexcept = default;
+  socket(socket&& other) noexcept;
+  socket& operator=(socket&& other) noexcept;
 
   socket(const socket& other) = delete;
   socket& operator=(const socket& other) = delete;
 
-  ~socket() {
-    close();
-  }
+  ~socket();
 
-  // Creates socket.
+  // Creates tls/udp socket.
   void create(net::family family, net::type type);
+
+  // Creates tls/dtls socket.
+  void create(net::family family, net::type type, const tls& tls);
 
   // Sets socket option.
   std::error_code set(net::option option, bool enable) noexcept;
 
-  // Performs the protocol handshake.
-  virtual net::task<bool> handshake();
+  // Performs handshake and returns selected alpn.
+  net::task<std::optional<std::string>> handshake();
 
   // Reads data from socket.
   // Returns on closed connection.
-  net::async_generator<std::string_view> recv(std::size_t size = 4096) {
-    std::vector<char> buffer;
-    buffer.resize(size);
-    while (true) {
-      auto data = co_await recv(buffer.data(), buffer.size());
-      if (data.empty()) {
-        break;
-      }
-      co_yield data;
-    }
-    co_return;
-  }
+  net::async_generator<std::string_view> recv(std::size_t size = 4096);
 
   // Reads data from socket.
   // Returns empty string_view on closed connection.
-  virtual net::task<std::string_view> recv(char* data, std::size_t size);
+  net::task<std::string_view> recv(char* data, std::size_t size);
 
   // Writes data to the socket.
   // Returns false on closed connection.
-  virtual net::task<bool> send(std::string_view data);
-
-  // Returns negotiated application layer protocol or nullptr.
-  virtual const char* alpn() const noexcept;
+  net::task<bool> send(std::string_view data);
 
   // Closes socket.
   std::error_code close() noexcept override;
@@ -87,7 +72,11 @@ public:
   }
 
 private:
+  class impl;
+  std::unique_ptr<impl> impl_;
   std::reference_wrapper<net::service> service_;
 };
+
+void format_arg(fmt::BasicFormatter<char>& formatter, const char*& format, const socket& socket);
 
 }  // namespace net

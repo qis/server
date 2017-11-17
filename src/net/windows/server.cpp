@@ -5,7 +5,9 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <mswsock.h>
+#include <tls.h>
 #include <array>
+#include <fstream>
 
 namespace net {
 namespace {
@@ -32,7 +34,7 @@ net::type get_type(SOCKET socket) {
 
 }  // namespace
 
-void server::create(const char* host, const char* port, net::type type) {
+void server::create(std::string host, std::string port, net::type type) {
   if (!service_.get()) {
     throw exception("create server", std::errc::bad_file_descriptor);
   }
@@ -59,7 +61,7 @@ void server::create(const char* host, const char* port, net::type type) {
 
 // clang-format off
 
-net::async_generator<net::connection> server::accept(std::size_t backlog) {
+net::async_generator<net::socket> server::accept(std::size_t backlog) {
   constexpr int size = sizeof(struct sockaddr_storage) + 16;
   if (::listen(as<SOCKET>(), backlog > 0 ? static_cast<int>(backlog) : SOMAXCONN) == SOCKET_ERROR) {
     throw exception("listen", WSAGetLastError());
@@ -68,17 +70,21 @@ net::async_generator<net::connection> server::accept(std::size_t backlog) {
   const auto type = get_type(as<SOCKET>());
   std::array<char, size * 2> buffer;
   while (true) {
-    auto connection = std::make_shared<net::socket>(service_);
-    connection->create(family, type);
-    if (!CreateIoCompletionPort(connection->as<HANDLE>(), service_.get().as<HANDLE>(), 0, 0)) {
+    net::socket socket(service_);
+    if (tls_) {
+      socket.create(family, type, tls_);
+    } else {
+      socket.create(family, type);
+    }
+    if (!CreateIoCompletionPort(socket.as<HANDLE>(), service_.get().as<HANDLE>(), 0, 0)) {
       throw exception("create connection completion port", GetLastError());
     }
-    if (!SetFileCompletionNotificationModes(connection->as<HANDLE>(), FILE_SKIP_COMPLETION_PORT_ON_SUCCESS)) {
+    if (!SetFileCompletionNotificationModes(socket.as<HANDLE>(), FILE_SKIP_COMPLETION_PORT_ON_SUCCESS)) {
       throw exception("set connection completion notification modes", GetLastError());
     }
     DWORD bytes = 0;
     event event;
-    if (!AcceptEx(as<SOCKET>(), connection->as<SOCKET>(), buffer.data(), 0, size, size, &bytes, &event)) {
+    if (!AcceptEx(as<SOCKET>(), socket.as<SOCKET>(), buffer.data(), 0, size, size, &bytes, &event)) {
       if (const auto code = WSAGetLastError(); code != ERROR_IO_PENDING) {
         continue;
       }
@@ -89,7 +95,7 @@ net::async_generator<net::connection> server::accept(std::size_t backlog) {
         continue;
       }
     }
-    co_yield connection;
+    co_yield socket;
   }
   co_return;
 }

@@ -130,7 +130,6 @@ private:
 
   int on_message_complete() {
     body_.resume({});
-    http_parser_pause(this, 1);
     return 0;
   }
 

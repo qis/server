@@ -1,10 +1,8 @@
 #pragma once
 #include <net/error.h>
 #include <net/socket.h>
-#include <net/tls/types.h>
 #include <memory>
 #include <string>
-#include <tls.h>
 
 #ifdef WIN32
 #include <ws2tcpip.h>
@@ -56,13 +54,13 @@ inline int to_int(type type) noexcept {
 
 class address {
 public:
-  address(const char* host, const char* port, net::type type, int flags) : info_(nullptr, freeaddrinfo) {
+  address(const std::string& host, const std::string& port, net::type type, int flags) : info_(nullptr, freeaddrinfo) {
     struct addrinfo* info = nullptr;
     struct addrinfo hints = {};
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = to_int(type);
     hints.ai_flags = flags;
-    if (const auto rv = ::getaddrinfo(host, port, &hints, &info)) {
+    if (const auto rv = ::getaddrinfo(host.data(), port.data(), &hints, &info)) {
       throw exception("get address info", rv, address_category());
     }
     info_.reset(info);
@@ -96,43 +94,4 @@ private:
   std::unique_ptr<addrinfo, decltype(&::freeaddrinfo)> info_;
 };
 
-namespace tls {
-
-constexpr auto ecdsa_cipher_list =
-  "ECDHE-ECDSA-AES256-GCM-SHA384:"  // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AESGCM(256)    Mac=AEAD
-  "ECDHE-ECDSA-CHACHA20-POLY1305:"  // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=ChaCha20(256)  Mac=AEAD
-  "ECDHE-ECDSA-AES128-GCM-SHA256:"  // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AESGCM(128)    Mac=AEAD
-  "ECDHE-ECDSA-AES256-SHA384:"      // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AES(256)       Mac=SHA384
-  "ECDHE-ECDSA-AES128-SHA256:";     // TLSv1.2  Kx=ECDH  Au=ECDSA  Enc=AES(128)       Mac=SHA256
-
-constexpr auto rsa_cipher_list =
-  "ECDHE-RSA-AES256-GCM-SHA384:"  // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AESGCM(256)    Mac=AEAD
-  "ECDHE-RSA-CHACHA20-POLY1305:"  // TLSv1.2  Kx=ECDH  Au=RSA    Enc=ChaCha20(256)  Mac=AEAD
-  "ECDHE-RSA-AES128-GCM-SHA256:"  // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AESGCM(128)    Mac=AEAD
-  "ECDHE-RSA-AES256-SHA384:"      // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AES(256)       Mac=SHA384
-  "ECDHE-RSA-AES128-SHA256:";     // TLSv1.2  Kx=ECDH  Au=RSA    Enc=AES(128)       Mac=SHA256
-
-using config = ::tls_config;
-using config_ptr = std::unique_ptr<config, void (*)(config*)>;
-
-inline config_ptr make_config(::tls_config* ptr = nullptr) noexcept {
-  static const auto free = [](config* ptr) {
-    if (ptr) {
-      ::tls_config_free(ptr);
-    }
-  };
-  return { static_cast<config*>(ptr), free };
-}
-
-inline context_ptr make_context(::tls* ptr = nullptr) noexcept {
-  static const auto free = [](context* ptr) {
-    if (ptr) {
-      ::tls_close(ptr);
-      ::tls_free(ptr);
-    }
-  };
-  return { static_cast<context*>(ptr), free };
-}
-
-}  // namespace tls
 }  // namespace net
