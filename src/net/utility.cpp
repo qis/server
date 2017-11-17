@@ -14,8 +14,6 @@
 #include <pwd.h>
 #endif
 
-#include <fmt/format.h>
-
 namespace net {
 namespace {
 
@@ -62,7 +60,6 @@ file_view::file_view() noexcept {
 }
 
 file_view::file_view(file_view&& other) noexcept : handle(other.release()) {
-  fmt::print("move ctor\n");
   data_ = std::exchange(other.data_, nullptr);
   size_ = std::exchange(other.size_, 0);
 #ifdef WIN32
@@ -71,7 +68,6 @@ file_view::file_view(file_view&& other) noexcept : handle(other.release()) {
 }
 
 file_view& file_view::operator=(file_view&& other) noexcept {
-  fmt::print("move op\n");
   data_ = std::exchange(other.data_, nullptr);
   size_ = std::exchange(other.size_, 0);
 #ifdef WIN32

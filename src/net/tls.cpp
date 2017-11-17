@@ -4,8 +4,6 @@
 #include <net/utility.h>
 #include <tls.h>
 
-#include <fmt/format.h>
-
 namespace net {
 
 void tls_config_deleter(::tls_config* ptr) noexcept {
@@ -83,7 +81,6 @@ certificate::~certificate() {
 }
 
 void certificate::load(const std::string& filename) {
-  fmt::print("loading: {}\n", filename);
   impl_ = std::make_unique<impl>(filename);
 }
 
