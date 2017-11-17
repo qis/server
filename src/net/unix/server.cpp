@@ -38,7 +38,7 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
       if (errno != EAGAIN) {
         continue;
       }
-      co_await event;
+      (void)co_await event;
       socket.reset(::accept4(handle_, addr, &socklen, SOCK_NONBLOCK));
       if (!socket) {
         continue;

@@ -2,6 +2,7 @@
 #include <net/event.h>
 #ifdef __linux__
 #include <sched.h>
+#include <sys/ioctl.h>
 #else
 #include <sys/param.h>
 #include <sys/cpuset.h>
@@ -66,14 +67,24 @@ void service::run(int processor) {
       break;
     }
     for (std::size_t i = 0, max = static_cast<std::size_t>(count); i < max; i++) {
+      const auto& ev = events[i];
 #ifdef NET_USE_EPOLL
-      const auto data = events[i].data.ptr;
+      auto data = ev.data.ptr;
+      auto size = 1;
+      //int size = 0;
+      //if (::ioctl(ev.data.fd, FIONREAD, &size) < 0) {
+      //  size = 0;
+      //}
+      //if (size < 0) {
+      //  size = 0;
+      //}
 #else
-      const auto data = events[i].udata;
+      const auto data = ev.udata;
+      const auto size = ev.data;
 #endif
       if (data) {
         auto& handler = *static_cast<event*>(data);
-        handler();
+        handler(static_cast<std::size_t>(size));
       }
     }
   }

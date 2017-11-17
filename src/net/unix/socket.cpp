@@ -17,7 +17,9 @@ net::task<std::string_view> native_recv(net::service& service, int socket, char*
     if (errno != EAGAIN) {
       throw exception("recv", errno);
     }
-    co_await event(service.value(), socket, NET_TLS_RECV);
+    if (!co_await event(service.value(), socket, NET_TLS_RECV)) {
+      co_return std::string_view{};
+    }
     rv = ::read(socket, buffer_data, buffer_size);
     if (rv < 0) {
       throw exception("async recv", errno);
@@ -35,7 +37,9 @@ net::task<bool> native_send(net::service& service, int socket, std::string_view 
       if (errno != EAGAIN) {
         throw exception("send", errno);
       }
-      co_await event(service.value(), socket, NET_TLS_SEND);
+      if (!co_await event(service.value(), socket, NET_TLS_SEND)) {
+        co_return false;
+      }
       rv = ::write(socket, buffer_data, buffer_size);
       if (rv < 0) {
         throw exception("async send", errno);
@@ -73,11 +77,15 @@ public:
         break;
       }
       if (rv == TLS_WANT_POLLOUT) {
-        co_await event(service_.value(), handle_, NET_TLS_SEND);
+        if (!co_await event(service_.value(), handle_, NET_TLS_SEND)) {
+          co_return std::optional<std::string>{};
+        }
         continue;
       }
       if (rv == TLS_WANT_POLLIN) {
-        co_await event(service_.value(), handle_, NET_TLS_RECV);
+        if (!co_await event(service_.value(), handle_, NET_TLS_RECV)) {
+          co_return std::optional<std::string>{};
+        }
         continue;
       }
       throw exception("tls handshake", ::tls_error(tls_.get()));
@@ -92,11 +100,15 @@ public:
         co_return std::string_view{ data, static_cast<std::size_t>(rv) };
       }
       if (rv == TLS_WANT_POLLIN) {
-        co_await event(service_.value(), handle_, NET_TLS_RECV);
+        if (!co_await event(service_.value(), handle_, NET_TLS_RECV)) {
+          break;
+        }
         continue;
       }
       if (rv == TLS_WANT_POLLOUT) {
-        co_await event(service_.value(), handle_, NET_TLS_SEND);
+        if (!co_await event(service_.value(), handle_, NET_TLS_SEND)) {
+          break;
+        }
         continue;
       }
       throw exception("tls recv", ::tls_error(tls_.get()));
@@ -115,11 +127,15 @@ public:
         continue;
       }
       if (rv == TLS_WANT_POLLOUT) {
-        co_await event(service_.value(), handle_, NET_TLS_SEND);
+        if (!co_await event(service_.value(), handle_, NET_TLS_SEND)) {
+          co_return false;
+        }
         continue;
       }
       if (rv == TLS_WANT_POLLIN) {
-        co_await event(service_.value(), handle_, NET_TLS_RECV);
+        if (!co_await event(service_.value(), handle_, NET_TLS_RECV)) {
+          co_return false;
+        }
         continue;
       }
       if (rv == 0) {

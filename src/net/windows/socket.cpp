@@ -21,7 +21,7 @@ net::task<std::string_view> native_recv(handle& handle, char* data, std::size_t 
     if (const auto code = WSAGetLastError(); code != ERROR_IO_PENDING) {
       throw exception("recv", code);
     }
-    bytes = co_await event;
+    bytes = static_cast<DWORD>(co_await event);
     if (!bytes) {
       WSAGetOverlappedResult(handle.as<SOCKET>(), &event, &bytes, FALSE, &flags);
       if (const auto code = WSAGetLastError()) {
@@ -41,7 +41,7 @@ net::task<bool> native_send(handle& handle, std::string_view data) {
       if (const auto code = WSAGetLastError(); code != ERROR_IO_PENDING) {
         throw exception("send", code);
       }
-      bytes = co_await event;
+      bytes = static_cast<DWORD>(co_await event);
       if (!bytes) {
         DWORD flags = 0;
         WSAGetOverlappedResult(handle.as<SOCKET>(), &event, &bytes, FALSE, &flags);
