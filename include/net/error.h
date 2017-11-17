@@ -31,7 +31,9 @@ private:
 
   template <typename T>
   static std::string format(const std::string& message, T code, const std::error_category& category) {
-    if constexpr (std::is_unsigned_v<T>) {
+    if constexpr (std::is_same_v<T, std::error_code>) {
+      return '[' + std::to_string(code.value()) + "] " + message + ": " + code.category().message(code.value());
+    } else if constexpr (std::is_unsigned_v<T>) {
       return '[' + std::to_string(static_cast<std::uintptr_t>(code)) + "] " + message + ": " +
         category.message(static_cast<int>(code));
     } else {

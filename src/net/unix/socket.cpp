@@ -56,6 +56,11 @@ net::task<bool> native_send(net::service& service, int socket, std::string_view 
 class socket::impl {
 public:
   impl(const tls& ctx, net::service& service, int handle) : service_(service), handle_(handle) {
+    ::tls* client = nullptr;
+    if (::tls_accept_socket(ctx.get(), &client, handle) < 0) {
+      throw exception("tls accept", ::tls_error(ctx.get()));
+    }
+    tls_.reset(client);
   }
 
   net::task<std::optional<std::string>> handshake() {

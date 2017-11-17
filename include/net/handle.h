@@ -2,6 +2,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
+#include <system_error>
 #include <cstdint>
 
 namespace net {
@@ -78,10 +79,22 @@ public:
     return handle_;
   }
 
+#ifdef WIN32
+  template <typename T>
+  void reset(T handle) noexcept {
+    close();
+    if constexpr (std::is_pointer_v<T>) {
+      handle_ = reinterpret_cast<handle_type>(handle);
+    } else {
+      handle_ = static_cast<handle_type>(handle);
+    }
+  }
+#else
   void reset(handle_type handle = invalid_handle_value) {
     close();
     handle_ = handle;
   }
+#endif
 
   handle_type release() noexcept {
     return std::exchange(handle_, invalid_handle_value);

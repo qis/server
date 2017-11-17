@@ -1,11 +1,10 @@
 #include <net/tls.h>
 #include <net/error.h>
-#ifdef WIN32
-#include <windows.h>
-#endif
+#include <net/handle.h>
+#include <net/utility.h>
 #include <tls.h>
-#include <numeric>
-#include <tuple>
+
+#include <fmt/format.h>
 
 namespace net {
 
@@ -33,44 +32,11 @@ const std::string_view g_key_end = "-----END RSA PRIVATE KEY-----";
 
 class certificate::impl {
 public:
-#ifdef WIN32
-  using handle = std::unique_ptr<std::remove_pointer_t<HANDLE>, void(*)(HANDLE handle)>;
-#endif
-
   impl(const std::string& filename) {
-#ifdef WIN32
-    std::wstring path;
-    path.resize(MultiByteToWideChar(CP_UTF8, 0, filename.data(), -1, nullptr, 0) + 1);
-    path.resize(MultiByteToWideChar(CP_UTF8, 0, filename.data(), -1, path.data(), static_cast<int>(path.size())));
-
-    constexpr auto access = GENERIC_READ;
-    constexpr auto share = FILE_SHARE_READ;
-    constexpr auto disposition = OPEN_EXISTING;
-    constexpr auto buffering = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING;
-    handle file(CreateFile(path.data(), access, share, nullptr, disposition, buffering, nullptr), file_deleter);
-    if (file.get() == INVALID_HANDLE_VALUE) {
-      throw exception("tls read certificate file", GetLastError());
+    if (const auto ec = file.open(filename)) {
+      throw exception("tls open \"" + filename + "\"", ec);
     }
-
-    LARGE_INTEGER size = {};
-    if (!GetFileSizeEx(file.get(), &size)) {
-      throw exception("tls get certificate file size", GetLastError());
-    }
-
-    constexpr auto protect = PAGE_READONLY | SEC_NOCACHE | SEC_COMMIT;
-    const auto hi = static_cast<DWORD>(size.HighPart);
-    const auto lo = static_cast<DWORD>(size.LowPart);
-    handle mapping(CreateFileMapping(file.get(), nullptr, protect, hi, lo, path.data()), mapping_deleter);
-    if (!mapping) {
-      throw exception("tls create certificate file mapping", GetLastError());
-    }
-
-    const auto view = MapViewOfFileEx(mapping.get(), FILE_MAP_READ, 0, 0, 0, nullptr);
-    if (!view) {
-      throw exception("tls map certificate file", GetLastError());
-    }
-    data = { reinterpret_cast<const char*>(view), static_cast<std::size_t>(size.QuadPart) };
-#endif
+    data = file.data();
 
     // Get private key.
     const auto key_beg = data.find(g_key_beg);
@@ -100,32 +66,13 @@ public:
       throw exception("tls certificate file is missing the ca certificate begin line");
     }
     ca = data.substr(ca_beg);
-
-#ifdef WIN32
-    mapping_ = std::move(mapping);
-    file_ = std::move(file);
-#endif
   }
 
   std::string_view ca;
   std::string_view cer;
   std::string_view key;
   std::string_view data;
-
-private:
-#ifdef WIN32
-  static void file_deleter(HANDLE handle) noexcept {
-    CloseHandle(handle);
-  }
-
-  static void mapping_deleter(HANDLE handle) noexcept {
-    UnmapViewOfFile(handle);
-    CloseHandle(handle);
-  }
-
-  handle file_ = { INVALID_HANDLE_VALUE, file_deleter };
-  handle mapping_ = { nullptr, mapping_deleter };
-#endif
+  net::file_view file;
 };
 
 certificate::certificate() noexcept {
@@ -136,6 +83,7 @@ certificate::~certificate() {
 }
 
 void certificate::load(const std::string& filename) {
+  fmt::print("loading: {}\n", filename);
   impl_ = std::make_unique<impl>(filename);
 }
 
