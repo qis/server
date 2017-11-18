@@ -9,6 +9,31 @@
 #include <algorithm>
 
 namespace net {
+namespace {
+
+ssize_t on_recv(::tls* ctx, void* data, size_t size, void* arg) noexcept {
+  auto& tls_data = *reinterpret_cast<socket::tls_data*>(arg);
+  if (!tls_data.recv.empty()) {
+    size = std::min(tls_data.recv.size(), size);
+    std::memcpy(data, tls_data.recv.data(), size);
+    tls_data.recv = tls_data.recv.substr(size);
+    return static_cast<ssize_t>(size);
+  }
+  return TLS_WANT_POLLIN;
+}
+
+ssize_t on_send(::tls* ctx, const void* data, size_t size, void* arg) noexcept {
+  auto& tls_data = *reinterpret_cast<socket::tls_data*>(arg);
+  if (tls_data.send.empty()) {
+    tls_data.send = { reinterpret_cast<const char*>(data), size };
+    return TLS_WANT_POLLOUT;
+  }
+  const auto ret = static_cast<ssize_t>(tls_data.send.size());
+  tls_data.send = {};
+  return ret;
+}
+
+}  // namespace
 
 socket::socket(net::service& service) noexcept : service_(service) {
 }
@@ -197,28 +222,6 @@ net::task<bool> socket::native_send(std::string_view data) {
     buffer.len -= bytes;
   }
   co_return true;
-}
-
-long long socket::on_recv(::tls* ctx, void* data, size_t size, void* arg) noexcept {
-  auto& tls_data = *reinterpret_cast<socket::tls_data*>(arg);
-  if (!tls_data.recv.empty()) {
-    size = std::min(tls_data.recv.size(), size);
-    std::memcpy(data, tls_data.recv.data(), size);
-    tls_data.recv = tls_data.recv.substr(size);
-    return static_cast<ssize_t>(size);
-  }
-  return TLS_WANT_POLLIN;
-}
-
-long long socket::on_send(::tls* ctx, const void* data, size_t size, void* arg) noexcept {
-  auto& tls_data = *reinterpret_cast<socket::tls_data*>(arg);
-  if (tls_data.send.empty()) {
-    tls_data.send = { reinterpret_cast<const char*>(data), size };
-    return TLS_WANT_POLLOUT;
-  }
-  const auto ret = static_cast<ssize_t>(tls_data.send.size());
-  tls_data.send = {};
-  return ret;
 }
 
 }  // namespace net

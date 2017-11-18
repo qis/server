@@ -32,6 +32,14 @@ enum class option {
 
 class socket final : public handle {
 public:
+#ifdef WIN32
+  struct tls_data {
+    std::string_view recv;
+    std::string_view send;
+    std::array<char, 4096> buffer;
+  };
+#endif
+
   explicit socket(net::service& service) noexcept;
   explicit socket(net::service& service, handle_type value) noexcept;
 
@@ -87,15 +95,6 @@ private:
   net::task<bool> native_send(std::string_view data);
 
 #ifdef WIN32
-  struct tls_data {
-    std::string_view recv;
-    std::string_view send;
-    std::array<char, 4096> buffer;
-  };
-
-  static long long on_recv(::tls* ctx, void* data, size_t size, void* arg) noexcept;
-  static long long on_send(::tls* ctx, const void* data, size_t size, void* arg) noexcept;
-
   std::unique_ptr<tls_data> tls_data_;
   std::reference_wrapper<net::service> service_;
 #else
