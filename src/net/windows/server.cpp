@@ -36,8 +36,8 @@ void server::create(const std::string& host, const std::string& port, net::type 
   if (!service_.get()) {
     throw exception("create server", std::errc::bad_file_descriptor);
   }
+  const address address(host, port, type, AI_PASSIVE);
   socket socket(service_);
-  address address(host, port, type, AI_PASSIVE);
   socket.create(address.family(), address.type());
   BOOL reuseaddr = TRUE;
   const auto reuseaddr_data = reinterpret_cast<const char*>(&reuseaddr);
@@ -48,16 +48,13 @@ void server::create(const std::string& host, const std::string& port, net::type 
   if (::bind(socket.as<SOCKET>(), address.addr(), static_cast<int>(address.addrlen())) == SOCKET_ERROR) {
     throw exception("bind", WSAGetLastError());
   }
-  if (!CreateIoCompletionPort(socket.as<HANDLE>(), service_.get().as<HANDLE>(), 0, 0)) {
-    throw exception("create server completion port", GetLastError());
-  }
-  if (!SetFileCompletionNotificationModes(socket.as<HANDLE>(), FILE_SKIP_COMPLETION_PORT_ON_SUCCESS)) {
-    throw exception("set server completion notification modes", GetLastError());
-  }
   reset(socket.release());
 }
 
 net::async_generator<net::socket> server::accept(std::size_t backlog) {
+  if (!service_.get()) {
+    throw exception("accept", std::errc::bad_file_descriptor);
+  }
   constexpr int size = sizeof(struct sockaddr_storage) + 16;
   if (::listen(as<SOCKET>(), backlog > 0 ? static_cast<int>(backlog) : SOMAXCONN) == SOCKET_ERROR) {
     throw exception("listen", WSAGetLastError());
@@ -71,19 +68,13 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
     if (tls_) {
       socket.accept(tls_);
     }
-    if (!CreateIoCompletionPort(socket.as<HANDLE>(), service_.get().as<HANDLE>(), 0, 0)) {
-      throw exception("create connection completion port", GetLastError());
-    }
-    if (!SetFileCompletionNotificationModes(socket.as<HANDLE>(), FILE_SKIP_COMPLETION_PORT_ON_SUCCESS)) {
-      throw exception("set connection completion notification modes", GetLastError());
-    }
     DWORD bytes = 0;
     event event;
     if (!AcceptEx(as<SOCKET>(), socket.as<SOCKET>(), buffer.data(), 0, size, size, &bytes, &event)) {
       if (const auto code = WSAGetLastError(); code != ERROR_IO_PENDING) {
         continue;
       }
-      co_await event;
+      (void)co_await event;
       DWORD flags = 0;
       WSAGetOverlappedResult(as<SOCKET>(), &event, &bytes, FALSE, &flags);
       if (const auto code = WSAGetLastError()) {

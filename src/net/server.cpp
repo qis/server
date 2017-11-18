@@ -6,9 +6,6 @@ namespace net {
 server::server(net::service& service) : service_(service) {
 }
 
-server::server(net::service& service, handle_type value) : handle(value), service_(service) {
-}
-
 server::~server() {
   close();
 }

@@ -17,7 +17,7 @@ void signal(int signum, std::function<void(int)> handler = {});
 // Deops user privileges to the given user on unix systems.
 void drop(const std::string& user);
 
-class file_view : public net::handle {
+class file_view final : public net::handle {
 public:
   file_view() noexcept;
   file_view(file_view&& other) noexcept;

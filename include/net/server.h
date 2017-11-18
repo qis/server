@@ -8,10 +8,9 @@
 
 namespace net {
 
-class server : public handle {
+class server final : public handle {
 public:
   explicit server(net::service& service);
-  explicit server(net::service& service, handle_type value);
 
   server(server&& other) noexcept = default;
   server& operator=(server&& other) noexcept = default;

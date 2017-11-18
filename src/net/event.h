@@ -28,17 +28,18 @@ class event final : public event_base {
 public:
   using handle_type = std::experimental::coroutine_handle<>;
 
+
 #if NET_USE_IOCP
   event() noexcept : event_base({}) {
   }
 #elif NET_USE_EPOLL
-  event(int epoll, int socket, uint32_t filter) noexcept : event_base({}), epoll_(epoll), socket_(socket) {
+  event(int service, int socket, uint32_t filter) noexcept : event_base({}), service_(service) {
     events = filter;
     data.fd = socket;
     data.ptr = this;
   }
 #elif NET_USE_KQUEUE
-  event(int kqueue, int socket, short filter) noexcept : event_base({}), kqueue_(kqueue) {
+  event(int service, int socket, short filter) noexcept : event_base({}), service_(service) {
     const auto ev = static_cast<kevent*>(this);
     const auto ident = static_cast<uintptr_t>(socket);
     EV_SET(ev, ident, filter, EV_ADD | EV_ONESHOT, 0, 0, this);
@@ -54,43 +55,50 @@ public:
   ~event() = default;
 
   constexpr bool await_ready() noexcept {
-    return ready_;
+    return false;
   }
 
   void await_suspend(handle_type handle) noexcept {
     handle_ = handle;
-#if NET_USE_EPOLL
-    ::epoll_ctl(epoll_, EPOLL_CTL_ADD, socket_, this);
+#if NET_USE_IOCP
+    size_ = 0;
+#elif NET_USE_EPOLL
+    ::epoll_ctl(service_, EPOLL_CTL_ADD, data.fd, this);
 #elif NET_USE_KQUEUE
-    ::kevent(kqueue_, this, 1, nullptr, 0, nullptr);
+    ::kevent(service_, this, 1, nullptr, 0, nullptr);
 #endif
   }
 
+#if NET_USE_IOCP
   constexpr auto await_resume() noexcept {
     return size_;
   }
-
-  void operator()(std::size_t size) noexcept {
-#if NET_USE_EPOLL
-    ::epoll_ctl(epoll_, EPOLL_CTL_DEL, socket_, this);
-#endif
-    size_ = size;
-    ready_ = true;
-    if (handle_) {
-      handle_.resume();
-    }
+#else
+  constexpr void await_resume() noexcept {
   }
+#endif
+
+#if NET_USE_IOCP
+  void operator()(DWORD size) noexcept {
+    size_ = size;
+    handle_.resume();
+  }
+#else
+  void operator()() noexcept {
+#if NET_USE_EPOLL
+    ::epoll_ctl(service_, EPOLL_CTL_DEL, data.fd, this);
+#endif
+    handle_.resume();
+  }
+#endif
 
 private:
-  bool ready_ = false;
-  std::size_t size_ = 0;
   handle_type handle_ = nullptr;
 
-#if NET_USE_EPOLL
-  int epoll_ = -1;
-  int socket_ = -1;
-#elif NET_USE_KQUEUE
-  int kqueue_ = -1;
+#if NET_USE_IOCP
+  DWORD size_ = 0;
+#else
+  int service_ = -1;
 #endif
 };
 

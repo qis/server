@@ -66,17 +66,14 @@ void service::run(int processor) {
       break;
     }
     for (std::size_t i = 0, max = static_cast<std::size_t>(count); i < max; i++) {
-      const auto& ev = events[i];
 #ifdef NET_USE_EPOLL
-      auto data = ev.data.ptr;
-      auto size = 1;
+      auto data = events[i].data.ptr;
 #else
-      const auto data = ev.udata;
-      const auto size = ev.data;
+      auto data = events[i].udata;
 #endif
       if (data) {
         auto& handler = *static_cast<event*>(data);
-        handler(static_cast<std::size_t>(size));
+        handler();
       }
     }
   }

@@ -61,7 +61,7 @@ void service::run(int processor) {
       auto& ev = events[i];
       if (ev.lpOverlapped) {
         auto& handler = *static_cast<event*>(ev.lpOverlapped);
-        handler(static_cast<std::size_t>(ev.dwNumberOfBytesTransferred));
+        handler(ev.dwNumberOfBytesTransferred);
       }
     }
   }

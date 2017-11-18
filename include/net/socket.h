@@ -4,9 +4,13 @@
 #include <net/service.h>
 #include <net/tls.h>
 #include <fmt/format.h>
+#include <string_view>
+
+#ifdef WIN32
+#include <array>
 #include <functional>
 #include <memory>
-#include <string_view>
+#endif
 
 namespace net {
 
@@ -26,13 +30,13 @@ enum class option {
   nodelay,
 };
 
-class socket : public handle {
+class socket final : public handle {
 public:
   explicit socket(net::service& service) noexcept;
   explicit socket(net::service& service, handle_type value) noexcept;
 
-  socket(socket&& other) noexcept;
-  socket& operator=(socket&& other) noexcept;
+  socket(socket&& other) noexcept = default;
+  socket& operator=(socket&& other) noexcept = default;
 
   socket(const socket& other) = delete;
   socket& operator=(const socket& other) = delete;
@@ -49,7 +53,7 @@ public:
   std::error_code set(net::option option, bool enable) noexcept;
 
   // Performs handshake and returns selected alpn.
-  net::task<std::optional<std::string>> handshake();
+  net::task<bool> handshake();
 
   // Reads data from socket.
   // Returns on closed connection.
@@ -57,24 +61,46 @@ public:
 
   // Reads data from socket.
   // Returns empty string_view on closed connection.
-  net::task<std::string_view> recv(char* data, std::size_t size);
+  net::task<std::string_view> recv(char* data, std::size_t size) {
+    return tls_ ? tls_recv(data, size) : native_recv(data, size);
+  }
 
   // Writes data to the socket.
   // Returns false on closed connection.
-  net::task<bool> send(std::string_view data);
+  net::task<bool> send(std::string_view data) {
+    return tls_ ? tls_send(data) : native_send(data);
+  }
 
   // Closes socket.
   std::error_code close() noexcept override;
 
-  // Returns associated service.
-  net::service& service() const noexcept {
-    return service_.get();
-  }
+  // Returns negotiated application layer protocol after a successfully completed handshake.
+  std::string_view alpn() noexcept;
 
 private:
-  class impl;
-  std::unique_ptr<impl> impl_;
+  net::tls tls_ = make_tls();
+
+  net::task<std::string_view> tls_recv(char* data, std::size_t size);
+  net::task<bool> tls_send(std::string_view data);
+
+  net::task<std::string_view> native_recv(char* data, std::size_t size);
+  net::task<bool> native_send(std::string_view data);
+
+#ifdef WIN32
+  struct tls_data {
+    std::string_view recv;
+    std::string_view send;
+    std::array<char, 4096> buffer;
+  };
+
+  static long long on_recv(::tls* ctx, void* data, size_t size, void* arg) noexcept;
+  static long long on_send(::tls* ctx, const void* data, size_t size, void* arg) noexcept;
+
+  std::unique_ptr<tls_data> tls_data_;
   std::reference_wrapper<net::service> service_;
+#else
+  handle_type service_ = invalid_handle_value;
+#endif
 };
 
 void format_arg(fmt::BasicFormatter<char>& formatter, const char*& format, const socket& socket);
