@@ -34,24 +34,18 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
   struct sockaddr_storage storage;
   auto addr = reinterpret_cast<struct sockaddr*>(&storage);
   while (true) {
-    fmt::print("accept on {}\n", handle_);
     auto socklen = static_cast<socklen_t>(sizeof(storage));
     net::socket socket(service_, ::accept4(handle_, addr, &socklen, SOCK_NONBLOCK));
     if (socket) {
       if (tls_) {
-        fmt::print("accept tls\n");
         socket.accept(tls_);
-        fmt::print("accept tls done\n");
       }
-      fmt::print("accept done\n");
       co_yield socket;
+      continue;
     }
     if (errno == EAGAIN) {
-      fmt::print("accept eagain\n");
       co_await event(service_.get().value(), handle_, NET_TLS_RECV);
-      fmt::print("accept eagain done\n");
     }
-    fmt::print("accept error: {}\n", errno);
   }
   co_return;
 }

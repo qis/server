@@ -1,6 +1,7 @@
 #pragma once
 #include <experimental/coroutine>
 #include <cstddef>
+#include <cassert>
 
 #if NET_USE_IOCP
 #include <windows.h>
@@ -33,9 +34,8 @@ public:
   event() noexcept : event_base({}) {
   }
 #elif NET_USE_EPOLL
-  event(int service, int socket, uint32_t filter) noexcept : event_base({}), service_(service) {
+  event(int service, int socket, uint32_t filter) noexcept : event_base({}), socket_(socket), service_(service) {
     events = filter;
-    data.fd = socket;
     data.ptr = this;
   }
 #elif NET_USE_KQUEUE
@@ -58,14 +58,16 @@ public:
     return false;
   }
 
-  void await_suspend(handle_type handle) noexcept {
+  void await_suspend(handle_type handle) {
     handle_ = handle;
 #if NET_USE_IOCP
     size_ = 0;
 #elif NET_USE_EPOLL
-    ::epoll_ctl(service_, EPOLL_CTL_ADD, data.fd, this);
+    [[maybe_unused]] const auto rv = ::epoll_ctl(service_, EPOLL_CTL_ADD, socket_, this);
+    assert(rv == 0);
 #elif NET_USE_KQUEUE
-    ::kevent(service_, this, 1, nullptr, 0, nullptr);
+    [[maybe_unused]] const auto rv = ::kevent(service_, this, 1, nullptr, 0, nullptr);
+    assert(rv == 1);
 #endif
   }
 
@@ -86,7 +88,7 @@ public:
 #else
   void operator()() noexcept {
 #if NET_USE_EPOLL
-    ::epoll_ctl(service_, EPOLL_CTL_DEL, data.fd, this);
+    ::epoll_ctl(service_, EPOLL_CTL_DEL, socket_, this);
 #endif
     handle_.resume();
   }
@@ -98,6 +100,9 @@ private:
 #if NET_USE_IOCP
   DWORD size_ = 0;
 #else
+#if NET_USE_EPOLL
+  int socket_ = -1;
+#endif
   int service_ = -1;
 #endif
 };
