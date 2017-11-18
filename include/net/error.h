@@ -10,20 +10,22 @@ namespace net {
 
 class exception : public std::domain_error {
 public:
-  exception(const std::string& message) noexcept : std::domain_error(message) {
+  exception(const std::string& message) : std::domain_error(message) {
   }
 
-  exception(const std::string& message, const char* description) noexcept :
-    std::domain_error(format(message, description)) {
+  exception(const std::string& message, const char* description) : std::domain_error(format(message, description)) {
+  }
+
+  exception(const std::string& message, const std::string& description) :
+    std::domain_error(message + ": " + description) {
   }
 
   template <typename T>
-  exception(const std::string& message, T code) noexcept :
-    std::domain_error(format(message, code)) {
+  exception(const std::string& message, T code) : std::domain_error(format(message, code)) {
   }
 
   template <typename T>
-  exception(const std::string& message, T code, const std::error_category& category) noexcept :
+  exception(const std::string& message, T code, const std::error_category& category) :
     std::domain_error(format(message, code, category)) {
   }
 

@@ -11,10 +11,18 @@ namespace {
 
 class library {
 public:
-  library() noexcept {
+  library() {
     WSADATA wsadata = {};
-    WSAStartup(MAKEWORD(2, 2), &wsadata);
+    if (const auto code = WSAStartup(MAKEWORD(2, 2), &wsadata)) {
+      throw exception("wsa startup", code);
+    }
+    const auto major = LOBYTE(wsadata.wVersion);
+    const auto minor = HIBYTE(wsadata.wVersion);
+    if (major < 2 || (major == 2 && minor < 2)) {
+      throw exception("wsa startup", "unsupported version: " + std::to_string(major) + "." + std::to_string(minor));
+    }
   }
+
   ~library() {
     WSACleanup();
     if (IsDebuggerPresent()) {

@@ -29,7 +29,6 @@ class event final : public event_base {
 public:
   using handle_type = std::experimental::coroutine_handle<>;
 
-
 #if NET_USE_IOCP
   event() noexcept : event_base({}) {
   }
