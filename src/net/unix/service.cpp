@@ -25,6 +25,10 @@ service::service() {
   }
 }
 
+service::~service() {
+  close();
+}
+
 void service::run(int processor) {
   if (!valid()) {
     throw exception("run service", std::errc::bad_file_descriptor);

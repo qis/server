@@ -15,9 +15,7 @@ public:
   service(const service& other) = delete;
   service& operator=(const service& other) = delete;
 
-  ~service() {
-    close();
-  }
+  ~service();
 
   // Runs service on the specified processor.
   void run(int processor = -1);

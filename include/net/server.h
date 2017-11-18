@@ -43,8 +43,8 @@ public:
   }
 
 protected:
-  std::reference_wrapper<net::service> service_;
   net::tls tls_ = make_tls();
+  std::reference_wrapper<net::service> service_;
 };
 
 }  // namespace net
