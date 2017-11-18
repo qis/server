@@ -9,8 +9,8 @@ class service final : public handle {
 public:
   service();
 
-  service(service&& other) noexcept = default;
-  service& operator=(service&& other) noexcept = default;
+  service(service&& other) = delete;
+  service& operator=(service&& other) = delete;
 
   service(const service& other) = delete;
   service& operator=(const service& other) = delete;
