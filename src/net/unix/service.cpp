@@ -50,6 +50,7 @@ void service::run(int processor) {
     }
 #endif
   }
+  stop_ = false;
 #ifdef NET_USE_EPOLL
   std::array<epoll_event, 1024> events;
 #else
@@ -57,17 +58,17 @@ void service::run(int processor) {
 #endif
   const auto service_data = events.data();
   const auto service_size = events.size();
-  while (true) {
+  while (!stop_) {
 #ifdef NET_USE_EPOLL
     const auto count = ::epoll_wait(handle_, service_data, service_size, -1);
 #else
     const auto count = ::kevent(handle_, nullptr, 0, service_data, service_size, nullptr);
 #endif
     if (count < 0) {
-      if (errno != EINTR) {
-        throw exception("get queued events", errno);
+      if (errno == EINTR) {
+        continue;
       }
-      break;
+      throw exception("get queued events", errno);
     }
     for (std::size_t i = 0, max = static_cast<std::size_t>(count); i < max; i++) {
 #ifdef NET_USE_EPOLL
@@ -84,9 +85,16 @@ void service::run(int processor) {
 }
 
 std::error_code service::close() noexcept {
+  stop_ = true;
   if (valid()) {
-    if (::close(handle_) < 0) {
-      return { errno, std::system_category() };
+    while (true) {
+      if (::close(handle_) < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
+        return { errno, std::system_category() };
+      }
+      break;
     }
     handle_ = invalid_handle_value;
   }

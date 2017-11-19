@@ -22,6 +22,9 @@ public:
 
   // Closes service.
   std::error_code close() noexcept override;
+
+private:
+  bool stop_ = true;
 };
 
 }  // namespace net

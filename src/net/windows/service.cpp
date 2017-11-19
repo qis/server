@@ -57,11 +57,12 @@ void service::run(int processor) {
       throw exception("set thread affinity", GetLastError());
     }
   }
+  stop_ = false;
   std::array<OVERLAPPED_ENTRY, 1024> events;
   const auto handle = as<HANDLE>();
   const auto service_data = events.data();
   const auto service_size = static_cast<ULONG>(events.size());
-  while (true) {
+  while (!stop_) {
     ULONG count = 0;
     if (!GetQueuedCompletionStatusEx(handle, service_data, service_size, &count, INFINITE, FALSE)) {
       if (const auto code = GetLastError(); code != ERROR_ABANDONED_WAIT_0) {
@@ -80,6 +81,7 @@ void service::run(int processor) {
 }
 
 std::error_code service::close() noexcept {
+  stop_ = true;
   if (valid()) {
     if (!CloseHandle(as<HANDLE>())) {
       return { static_cast<int>(GetLastError()), std::system_category() };
