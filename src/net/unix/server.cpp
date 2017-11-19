@@ -46,6 +46,9 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
     if (errno == EAGAIN) {
       co_await event(service_.get().value(), handle_, NET_TLS_RECV);
     }
+    //if (errno == EINTR) {
+    //  continue;
+    //}
   }
   co_return;
 }
@@ -53,8 +56,14 @@ net::async_generator<net::socket> server::accept(std::size_t backlog) {
 std::error_code server::close() noexcept {
   if (valid()) {
     ::shutdown(handle_, SHUT_RDWR);
-    if (::close(handle_) < 0) {
-      return { errno, std::system_category() };
+    while (true) {
+      if (::close(handle_) < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
+        return { errno, std::system_category() };
+      }
+      break;
     }
     handle_ = invalid_handle_value;
   }

@@ -68,8 +68,14 @@ net::task<bool> socket::handshake() {
 std::error_code socket::close() noexcept {
   if (valid()) {
     ::shutdown(handle_, SHUT_RDWR);
-    if (::close(handle_) < 0) {
-      return { errno, std::system_category() };
+    while (true) {
+      if (::close(handle_) < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
+        return { errno, std::system_category() };
+      }
+      break;
     }
     handle_ = invalid_handle_value;
   }
@@ -122,10 +128,14 @@ net::task<std::string_view> socket::native_recv(char* data, std::size_t size) {
     if (rv == 0) {
       co_return std::string_view{};
     }
-    if (errno != EAGAIN) {
-      throw exception("recv", errno);
+    if (errno == EAGAIN) {
+      co_await event(service_, handle_, NET_TLS_RECV);
+      continue;
     }
-    co_await event(service_, handle_, NET_TLS_RECV);
+    if (errno == EINTR) {
+      continue;
+    }
+    throw exception("recv", errno);
   }
 }
 
@@ -142,10 +152,14 @@ net::task<bool> socket::native_send(std::string_view data) {
     if (rv == 0) {
       co_return false;
     }
-    if (errno != EAGAIN) {
-      throw exception("send", errno);
+    if (errno == EAGAIN) {
+      co_await event(service_, handle_, NET_TLS_SEND);
+      continue;
     }
-    co_await event(service_, handle_, NET_TLS_SEND);
+    if (errno == EINTR) {
+      continue;
+    }
+    throw exception("send", errno);
   }
   co_return true;
 }
