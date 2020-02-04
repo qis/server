@@ -67,7 +67,7 @@ struct translator_between<std::string, spdlog::level::level_enum> {
 
 namespace app {
 
-void config::parse()
+void config::parse(const std::filesystem::path& file)
 {
   std::stringstream ss;
   std::ifstream is(file, std::ios::binary);
@@ -88,11 +88,7 @@ void config::parse()
   if (pt.get_child_optional("log.filename")) {
     log.filename = pt.get<std::filesystem::path>("log.filename");
     if (log.filename->is_relative()) {
-      if (std::filesystem::is_directory(path / "log")) {
-        log.filename = std::filesystem::absolute(path / "log" / *log.filename);
-      } else {
-        log.filename = std::filesystem::absolute(path / *log.filename);
-      }
+      log.filename = std::filesystem::absolute(file.parent_path() / *log.filename);
     }
   }
   log.severity = pt.get<spdlog::level::level_enum>("log.severity", log.severity);

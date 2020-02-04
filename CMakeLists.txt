@@ -37,13 +37,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
 # Bundle
 add_custom_target(bundle ALL
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  COMMAND ${CMAKE_COMMAND} -E remove_directory build/html
+  COMMAND ${CMAKE_COMMAND} -E remove_directory build/bundle/release
   COMMAND npm run build
   USES_TERMINAL)
 
 # Install
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/data/ DESTINATION data)
+
 install(CODE "file(REMOVE_RECURSE \"${CMAKE_INSTALL_PREFIX}/html\")")
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build/html/ DESTINATION html)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build/bundle/release/ DESTINATION html)
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
 install(FILES ${PROJECT_NAME}.ini DESTINATION etc)

@@ -1,7 +1,7 @@
 #include <version.h>
 #include <windows.h>
 
-101 ICON "../favicon.ico"
+101 ICON "../html/favicon.ico"
 
 VS_VERSION_INFO VERSIONINFO
   PRODUCTVERSION PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR

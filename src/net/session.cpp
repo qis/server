@@ -171,23 +171,29 @@ auto session::handle(const http::request<http::string_body>& request, beast::err
     co_return;
   }
 
-  // Build the path to the requested file.
-  auto path = std::string{ server_.path() };
-  path.append(request.target());
+  // Build file path.
+  std::string file;
+  if (request.target().starts_with("/data")) {
+    file.append(server_.html());
+    file.append(request.target().substr(5));
+  } else {
+    file.append(server_.html());
+    file.append(request.target());
+  }
   if (request.target().back() == '/') {
-    path.append("index.html");
+    file.append("index.html");
   }
 
   // Attempt to open the file.
   http::file_body::value_type body;
-  body.open(path.data(), beast::file_mode::scan, ec);
+  body.open(file.data(), beast::file_mode::scan, ec);
   if (ec && ec == beast::errc::permission_denied) {
     auto executor = co_await asio::this_coro::executor;
     auto timer = asio::system_timer{ executor };
     for (std::size_t i = 0; ec && ec == beast::errc::permission_denied && i < 500; i++) {
       timer.expires_after(std::chrono::milliseconds{ 20 });
       co_await timer.async_wait(asio::use_awaitable);
-      body.open(path.data(), beast::file_mode::scan, ec);
+      body.open(file.data(), beast::file_mode::scan, ec);
     }
   }
 
@@ -214,7 +220,7 @@ auto session::handle(const http::request<http::string_body>& request, beast::err
   if (request.method() == http::verb::head) {
     http::response<http::empty_body> response{ http::status::ok, request.version() };
     response.set(http::field::server, SERVER_VERSION_STRING);
-    response.set(http::field::content_type, mime_type(path));
+    response.set(http::field::content_type, mime_type(file));
     response.content_length(size);
     response.keep_alive(request.keep_alive());
     LOGD("[{::^8}] {:03d} {} {}", client_, response.result(), request.method_string(), request.target());
@@ -229,7 +235,7 @@ auto session::handle(const http::request<http::string_body>& request, beast::err
     std::make_tuple(http::status::ok, request.version()),
   };
   response.set(http::field::server, SERVER_VERSION_STRING);
-  response.set(http::field::content_type, mime_type(path));
+  response.set(http::field::content_type, mime_type(file));
   response.content_length(size);
   response.keep_alive(request.keep_alive());
   LOGI("[{::^8}] {:03d} {} {}", client_, response.result(), request.method_string(), request.target());

@@ -246,17 +246,24 @@ int main(int argc, char* argv[])
 {
   app::config config;
   try {
-    if (argc > 2) {
-      config.path = std::filesystem::canonical(std::filesystem::path(argv[2]));
-    } else {
-      config.path = application().parent_path().parent_path();
-    }
+    std::filesystem::path path = application().parent_path().parent_path();
+    std::filesystem::path file;
     if (argc > 1) {
-      config.file = std::filesystem::absolute(std::filesystem::path(argv[1]));
+      file = std::filesystem::absolute(std::filesystem::path(argv[1]));
     } else {
-      config.file = config.path / "etc" / "server.ini";
+      file = path / "etc" / "server.ini";
     }
-    config.parse();
+    if (argc > 2) {
+      config.data = std::filesystem::canonical(std::filesystem::path(argv[2]));
+    } else {
+      config.data = path / "data";
+    }
+    if (argc > 3) {
+      config.data = std::filesystem::canonical(std::filesystem::path(argv[3]));
+    } else {
+      config.data = path / "html";
+    }
+    config.parse(file);
     logger(config.log.severity, config.log.filename, 0);
   }
   catch (const std::system_error& e) {

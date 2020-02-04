@@ -2,6 +2,7 @@
 .*
 *.aps
 !/data/
+!/html/
 !/res/
 !/src/
 !/.clang-format
@@ -9,9 +10,6 @@
 !/.gitattributes
 !/.gitignore
 !/CMakeLists.txt
-!/favicon.ico
-!/index.html
-!/index.js
 !/license.txt
 !/make.cmd
 !/makefile

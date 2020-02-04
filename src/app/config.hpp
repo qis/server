@@ -4,8 +4,8 @@
 namespace app {
 
 struct config {
-  std::filesystem::path path;
-  std::filesystem::path file;
+  std::filesystem::path data;
+  std::filesystem::path html;
 
   struct server {
     std::string address;
@@ -18,7 +18,7 @@ struct config {
     spdlog::level::level_enum severity = spdlog::level::off;
   } log;
 
-  void parse();
+  void parse(const std::filesystem::path& file);
 };
 
 }  // namespace app

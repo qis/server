@@ -4,8 +4,8 @@
   "description": "C++ server example.",
   "main": "index.html",
   "scripts": {
-    "watch": "parcel watch --public-url ./ --cache-dir build/cache --out-dir html index.html favicon.ico",
-    "build": "parcel build --public-url ./ --cache-dir build/cache --out-dir build/html index.html favicon.ico"
+    "watch": "parcel watch --public-url ./ --cache-dir build/bundle/cache --out-dir build/bundle/debug html/index.html html/favicon.ico",
+    "build": "parcel build --public-url ./ --cache-dir build/bundle/cache --out-dir build/bundle/release html/index.html html/favicon.ico"
   },
   "browserslist": [
     "last 2 edge versions",
