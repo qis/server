@@ -6,6 +6,34 @@
   <link rel="shortcut icon" href="favicon.ico">
   <meta name="viewport" content="width=device-width" />
   <style>
+    @font-face {
+      font-family: "PT Sans";
+      src: url("data/fonts/PTSans-Regular.ttf");
+    }
+
+    @font-face {
+      font-family: "PT Sans";
+      src: url("data/fonts/PTSans-Bold.ttf");
+      font-weight: bold;
+    }
+
+    @font-face {
+      font-family: "PT Sans";
+      src: url("data/fonts/PTSans-Italic.ttf");
+      font-style: italic;
+    }
+
+    @font-face {
+      font-family: "PT Sans";
+      src: url("data/fonts/PTSans-BoldItalic.ttf");
+      font-weight: bold;
+      font-style: italic;
+    }
+
+    html {
+      background: #eee;
+    }
+
     body,
     html {
       margin: 0;
@@ -13,25 +41,41 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #333;
-      color: #eee;
     }
 
-    a {
-      color: cadetblue
+    noscript#warning {
+      display: block;
+      position: relative;
+      top: 40%;
+      width: 90%;
+      max-width: 400px;
+      margin: -110px auto auto auto;
+      padding: 2ex;
+      box-sizing: border-box;
+      border: 1px solid grey;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      font-family: 'PT Sans', Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      font-size: large;
+      overflow: hidden;
     }
   </style>
 </head>
 <body>
   <noscript id="warning">
-    <p lang="en">This website requires a modern browser with JavaScript support!</p>
-    <p lang="de">Diese Website setzt einen modernen Browser voraus, der JavaScript unterstützt!</p>
+    <div>
+      <p lang="en">Please enable JavaScript to view this page!</p>
+      <p lang="de">Bitte schalten Sie JavaScript ein, um diese Webseite zu betrachten!</p>
+    </div>
   </noscript>
 
   <script id="checker">
-    const warning = document.getElementById("warning");
+    var warning = document.getElementById("warning");
     warning.parentNode.removeChild(warning);
-    const checker = document.getElementById("checker");
+    var checker = document.getElementById("checker");
     checker.parentNode.removeChild(checker);
   </script>
 
