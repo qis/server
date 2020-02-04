@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
     if (argc > 1) {
       file = std::filesystem::absolute(std::filesystem::path(argv[1]));
     } else {
-      file = path / "etc" / "server.ini";
+      file = std::filesystem::absolute(path / "etc" / "server.ini");
     }
     if (argc > 2) {
       config.data = std::filesystem::canonical(std::filesystem::path(argv[2]));
@@ -259,9 +259,9 @@ int main(int argc, char* argv[])
       config.data = path / "data";
     }
     if (argc > 3) {
-      config.data = std::filesystem::canonical(std::filesystem::path(argv[3]));
+      config.html = std::filesystem::canonical(std::filesystem::path(argv[3]));
     } else {
-      config.data = path / "html";
+      config.html = path / "html";
     }
     config.parse(file);
     logger(config.log.severity, config.log.filename, 0);

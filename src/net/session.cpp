@@ -172,9 +172,11 @@ auto session::handle(const http::request<http::string_body>& request, beast::err
   }
 
   // Build file path.
+  const auto data = server_.data();
+  const auto html = server_.html();
   std::string file;
-  if (request.target().starts_with("/data")) {
-    file.append(server_.html());
+  if (request.target().starts_with("/data/")) {
+    file.append(server_.data());
     file.append(request.target().substr(5));
   } else {
     file.append(server_.html());

@@ -2,7 +2,7 @@
   "name": "server",
   "version": "1.0.0",
   "description": "C++ server example.",
-  "main": "index.html",
+  "main": "html/index.html",
   "scripts": {
     "watch": "parcel watch --public-url ./ --cache-dir build/bundle/cache --out-dir build/bundle/debug html/index.html html/favicon.ico",
     "build": "parcel build --public-url ./ --cache-dir build/bundle/cache --out-dir build/bundle/release html/index.html html/favicon.ico"
@@ -25,9 +25,6 @@
       }
     }
   },
-  "alias": {
-    "src": "./src"
-  },
   "devDependencies": {
     "@babel/core": "^7.8.4",
     "autoprefixer": "^9.7.4",
@@ -38,5 +35,6 @@
     "svelte": "^3.18.1"
   },
   "keywords": [],
-  "license": "Boost"
+  "license": "Boost",
+  "dependencies": {}
 }
