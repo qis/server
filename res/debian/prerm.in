@@ -1,0 +1,4 @@
+#!/bin/sh
+set +e
+systemctl stop @PROJECT_NAME@
+systemctl disable @PROJECT_NAME@

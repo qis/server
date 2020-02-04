@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "make.cmd",
+      "args": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "group": "build",
+        "clear": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "type": "npm",
+      "script": "watch",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "build",
+        "clear": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

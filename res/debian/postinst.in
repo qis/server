@@ -1,0 +1,35 @@
+#!/bin/sh
+set +e
+
+base="/opt/@PROJECT_NAME@"
+unit="/lib/systemd/system/@PROJECT_NAME@.service"
+
+id -u @PROJECT_NAME@ >/dev/null 2>&1 || useradd -r -s /bin/false @PROJECT_NAME@
+
+test -d "${base}/log" || mkdir -p "${base}/log"
+chown @PROJECT_NAME@:@PROJECT_NAME@ "${base}/log"
+chmod 0750 "${base}/log"
+
+test -f "${unit}" || cat > "${unit}" <<EOF
+[Unit]
+Description=@PROJECT_DESCRIPTION@
+Requires=network.target nss-lookup.target
+After=time-sync.target
+
+[Service]
+User=@PROJECT_NAME@
+Type=simple
+ExecStart=${base}/bin/@PROJECT_NAME@
+ExecStop=/bin/kill -HUP \$MAINPID
+WorkingDirectory=${base}
+RemainAfterExit=no
+Restart=on-failure
+RestartSec=10
+
+[Install]
+Alias=@PROJECT_NAME@
+WantedBy=multi-user.target
+EOF
+
+systemctl enable @PROJECT_NAME@
+systemctl start @PROJECT_NAME@

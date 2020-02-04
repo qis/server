@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Server</title>
+  <meta charset="utf-8">
+  <link rel="shortcut icon" href="favicon.ico">
+  <meta name="viewport" content="width=device-width" />
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #333;
+      color: #eee;
+    }
+
+    a {
+      color: cadetblue
+    }
+  </style>
+</head>
+<body>
+  <noscript id="warning">
+    <p lang="en">This website requires a modern browser with JavaScript support!</p>
+    <p lang="de">Diese Website setzt einen modernen Browser voraus, der JavaScript unterstützt!</p>
+  </noscript>
+
+  <script id="checker">
+    const warning = document.getElementById("warning");
+    warning.parentNode.removeChild(warning);
+    const checker = document.getElementById("checker");
+    checker.parentNode.removeChild(checker);
+  </script>
+
+  <script src="index.js"></script>
+</body>
+</html>
