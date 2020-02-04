@@ -1,6 +1,7 @@
 /*
 .*
 *.aps
+!/data/
 !/res/
 !/src/
 !/.clang-format

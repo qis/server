@@ -8,7 +8,15 @@
     "build": "parcel build --public-url ./ --cache-dir build/cache --out-dir build/html index.html favicon.ico"
   },
   "browserslist": [
-    ">1% in US"
+    "last 2 edge versions",
+    "last 2 chrome versions",
+    "last 2 firefox versions",
+    "last 2 opera versions",
+    "last 3 safari versions",
+    "last 3 samsung versions",
+    "last 3 and_chr versions",
+    "last 3 and_ff versions",
+    "last 3 ios_saf versions"
   ],
   "postcss": {
     "plugins": {
@@ -21,13 +29,13 @@
     "src": "./src"
   },
   "devDependencies": {
-    "@babel/core": "^7.8.3",
+    "@babel/core": "^7.8.4",
     "autoprefixer": "^9.7.4",
-    "browserslist": "^4.8.4",
+    "browserslist": "^4.8.6",
     "parcel-bundler": "^1.12.4",
-    "parcel-plugin-svelte": "^4.0.5",
+    "parcel-plugin-svelte": "^4.0.6",
     "postcss-modules": "^1.5.0",
-    "svelte": "^3.17.2"
+    "svelte": "^3.18.1"
   },
   "keywords": [],
   "license": "Boost"
