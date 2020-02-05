@@ -23,6 +23,7 @@ constexpr std::string_view mime_type(std::string_view path) noexcept
     if (ext == "png")  return "image/png";
     if (ext == "svg")  return "image/svg+xml";
     if (ext == "ico")  return "image/x-icon";
+    if (ext == "ttf")  return "font/ttf";
   }
   // clang-format on
   return "application/octet-stream";

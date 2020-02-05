@@ -3,21 +3,25 @@
 <head>
   <title>Server</title>
   <meta charset="utf-8">
-  <link rel="shortcut icon" href="favicon.ico">
-  <meta name="viewport" content="width=device-width" />
-  <link rel="preload" href="fonts/PTSans/PTSans-Regular.ttf" as="font" crossorigin="anonymous" />
-  <link rel="preload" href="fonts/PTSans/PTSans-Bold.ttf" as="font" crossorigin="anonymous" />
+  <meta name="viewport" content="width=device-width">
   <link rel="preload" href="index.js" as="script">
+  <link rel="preload" href="fonts/Roboto-Regular.ttf" as="font" crossorigin="anonymous">
+  <link rel="preload" href="fonts/Roboto-Bold.ttf" as="font" crossorigin="anonymous">
+  <link rel="stylesheet" href="fonts/Roboto.css">
+  <link rel="icon" href="favicon.ico">
   <style>
     @font-face {
-      font-family: "PT Sans";
-      src: url("fonts/PTSans/PTSans-Regular.ttf");
+      font-family: "Roboto";
+      font-weight: 400;
+      font-style: normal;
+      src: url("fonts/Roboto-Regular.ttf") format('truetype');
     }
 
     @font-face {
-      font-family: "PT Sans";
-      src: url("fonts/PTSans/PTSans-Bold.ttf");
-      font-weight: bold;
+      font-family: "Roboto";
+      font-weight: 700;
+      font-style: normal;
+      src: url("fonts/Roboto-Bold.ttf") format('truetype');
     }
 
     body,
@@ -27,7 +31,10 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: 'PT Sans', Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      font-family: 'Roboto', Helvetica, sans-serif;
     }
 
     noscript#warning {
