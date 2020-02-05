@@ -256,12 +256,12 @@ int main(int argc, char* argv[])
       file = std::filesystem::absolute(path / "etc" / "server.ini");
     }
     if (argc > 2) {
-      html = std::filesystem::canonical(std::filesystem::path(argv[2]));
+      html = std::filesystem::absolute(std::filesystem::path(argv[2]));
     } else {
       html = path / "html";
     }
     if (argc > 3) {
-      data = std::filesystem::canonical(std::filesystem::path(argv[3]));
+      data = std::filesystem::absolute(std::filesystem::path(argv[3]));
     } else {
       data = path / "html" / "data";
     }
