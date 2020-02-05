@@ -8,7 +8,7 @@
       "preLaunchTask": "build",
       "internalConsoleOptions": "openOnSessionStart",
       "program": "@CMAKE_CURRENT_BINARY_DIR@/@PROJECT_NAME@@CMAKE_EXECUTABLE_SUFFIX@",
-      "args": [ "@PROJECT_NAME@.ini", "data", "build/bundle/debug" ],
+      "args": [ "@PROJECT_NAME@.ini", "build/bundle/debug", "data" ],
       "cwd": "${workspaceRoot}",
       "externalConsole": false,
       "stopAtEntry": false,

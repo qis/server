@@ -5,6 +5,11 @@
   <meta charset="utf-8">
   <link rel="shortcut icon" href="favicon.ico">
   <meta name="viewport" content="width=device-width" />
+  <link rel="preload" href="fonts/PTSans/PTSans-Regular.ttf" as="font" />
+  <link rel="preload" href="fonts/PTSans/PTSans-Bold.ttf" as="font" />
+  <link rel="preload" href="fonts/PTSans/PTSans-Italic.ttf" as="font" />
+  <link rel="preload" href="fonts/PTSans/PTSans-BoldItalic.ttf" as="font" />
+  <link rel="preload" href="index.js" as="script">
   <style>
     @font-face {
       font-family: "PT Sans";
@@ -26,12 +31,8 @@
     @font-face {
       font-family: "PT Sans";
       src: url("fonts/PTSans/PTSans-BoldItalic.ttf");
-      font-weight: bold;
       font-style: italic;
-    }
-
-    html {
-      background: #eee;
+      font-weight: bold;
     }
 
     body,
@@ -41,41 +42,33 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
+      font-family: 'PT Sans', Arial, Helvetica, sans-serif;
     }
 
     noscript#warning {
       display: block;
       position: relative;
-      top: 40%;
+      top: 20%;
       width: 90%;
-      max-width: 400px;
-      margin: -110px auto auto auto;
-      padding: 2ex;
-      box-sizing: border-box;
-      border: 1px solid grey;
-      border-radius: 8px;
-      background: #fff;
-      box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+      max-width: 40ex;
+      margin: 0 auto auto auto;
       text-align: center;
-      font-family: 'PT Sans', Arial, Helvetica, sans-serif;
       font-weight: bold;
-      font-size: large;
-      overflow: hidden;
+      font-size: 120%;
     }
   </style>
 </head>
 <body>
   <noscript id="warning">
-    <div>
-      <p lang="en">Please enable JavaScript to view this page!</p>
-      <p lang="de">Bitte schalten Sie JavaScript ein, um diese Webseite zu betrachten!</p>
-    </div>
+    <img src="res/js.svg" alt="JavaScript" style="width: 50%; margin-bottom: 1ex;">
+    <p lang="en">Please enable JavaScript to view this page!</p>
+    <p lang="de">Bitte schalten Sie JavaScript ein, um diese Webseite zu betrachten!</p>
   </noscript>
 
   <script id="checker">
-    var warning = document.getElementById("warning");
+    const warning = document.getElementById("warning");
     warning.parentNode.removeChild(warning);
-    var checker = document.getElementById("checker");
+    const checker = document.getElementById("checker");
     checker.parentNode.removeChild(checker);
   </script>
 

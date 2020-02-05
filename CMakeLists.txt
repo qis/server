@@ -42,11 +42,9 @@ add_custom_target(bundle ALL
   USES_TERMINAL)
 
 # Install
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/data/ DESTINATION data)
-
 install(CODE "file(REMOVE_RECURSE \"${CMAKE_INSTALL_PREFIX}/html\")")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/data DESTINATION html)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build/bundle/release/ DESTINATION html)
-
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
 install(FILES ${PROJECT_NAME}.ini DESTINATION etc)
 

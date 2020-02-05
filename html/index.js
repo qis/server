@@ -1,5 +1,5 @@
 import "@babel/polyfill";
-import main from "/src/main.svelte";
+import main from "/main.svelte";
 
 const root = new main({ target: document.body });
 

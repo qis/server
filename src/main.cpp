@@ -245,23 +245,25 @@ void logger(spdlog::level::level_enum severity, std::optional<std::filesystem::p
 int main(int argc, char* argv[])
 {
   app::config config;
+  std::filesystem::path data;
+  std::filesystem::path html;
   try {
-    std::filesystem::path path = application().parent_path().parent_path();
     std::filesystem::path file;
+    std::filesystem::path path = application().parent_path().parent_path();
     if (argc > 1) {
       file = std::filesystem::absolute(std::filesystem::path(argv[1]));
     } else {
       file = std::filesystem::absolute(path / "etc" / "server.ini");
     }
     if (argc > 2) {
-      config.data = std::filesystem::canonical(std::filesystem::path(argv[2]));
+      html = std::filesystem::canonical(std::filesystem::path(argv[2]));
     } else {
-      config.data = path / "data";
+      html = path / "html";
     }
     if (argc > 3) {
-      config.html = std::filesystem::canonical(std::filesystem::path(argv[3]));
+      data = std::filesystem::canonical(std::filesystem::path(argv[3]));
     } else {
-      config.html = path / "html";
+      data = path / "html" / "data";
     }
     config.parse(file);
     logger(config.log.severity, config.log.filename, 0);
@@ -280,7 +282,7 @@ int main(int argc, char* argv[])
     signals.async_wait([&](auto, auto) {
       context.stop();
     });
-    asio::co_spawn(context.get_executor(), net::server{ std::move(config) }, asio::detached);
+    asio::co_spawn(context.get_executor(), net::server{ std::move(config), html, data }, asio::detached);
     context.run();
   }
   catch (const boost::system::system_error& e) {

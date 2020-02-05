@@ -4,9 +4,6 @@
 namespace app {
 
 struct config {
-  std::filesystem::path data;
-  std::filesystem::path html;
-
   struct server {
     std::string address;
     std::string service;
