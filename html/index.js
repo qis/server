@@ -1,9 +1,11 @@
 import "@babel/polyfill";
-import main from "/main.svelte";
+import App from "./src/App.svelte";
 
-const warning = document.getElementById("warning");
-warning.parentNode.removeChild(warning);
+{
+  const warning = document.getElementById("warning");
+  warning.parentNode.removeChild(warning);
+}
 
-const root = new main({ target: document.body });
+const app = new App({ target: document.body });
 
-export default root;
+export default app;

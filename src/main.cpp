@@ -263,7 +263,7 @@ int main(int argc, char* argv[])
     if (argc > 3) {
       data = std::filesystem::absolute(std::filesystem::path(argv[3]));
     } else {
-      data = path / "html" / "data";
+      data = path / "data";
     }
     config.parse(file);
     logger(config.log.severity, config.log.filename, 0);
