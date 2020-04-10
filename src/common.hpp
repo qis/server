@@ -176,7 +176,7 @@ struct async_result<use_awaitable_t<Executor>, R(Args...)> {
 // clang-format off
 
 // ============================================================================
-// asio
+// boost::asio
 // ============================================================================
 
 #include <boost/asio/co_spawn.hpp>
@@ -194,7 +194,7 @@ struct async_result<use_awaitable_t<Executor>, R(Args...)> {
 namespace asio = boost::asio;
 
 // ============================================================================
-// beast
+// boost::beast
 // ============================================================================
 
 #include <boost/beast/core.hpp>
@@ -205,7 +205,7 @@ namespace beast = boost::beast;
 namespace http = beast::http;
 
 // ============================================================================
-// json
+// boost::json
 // ============================================================================
 
 #include <boost/json.hpp>

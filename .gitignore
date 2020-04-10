@@ -10,10 +10,10 @@
 !/.gitattributes
 !/.gitignore
 !/CMakeLists.txt
+!/CMakeSettings.json
 !/license.txt
 !/make.cmd
 !/makefile
 !/package.json
-!/package-lock.json
 !/readme.md
 !/server.ini

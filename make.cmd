@@ -24,7 +24,7 @@ if %0 == "%~0" (
 )
 
 :make
-cmake -E time nmake /nologo system=windows %*
+nmake /nologo system=windows %*
 goto :eof
 
 :open

@@ -26,13 +26,13 @@
     }
   },
   "devDependencies": {
-    "@babel/core": "^7.8.4",
-    "autoprefixer": "^9.7.4",
-    "browserslist": "^4.8.6",
+    "@babel/core": "^7.9.0",
+    "autoprefixer": "^9.7.6",
+    "browserslist": "^4.11.1",
     "parcel-bundler": "^1.12.4",
     "parcel-plugin-svelte": "^4.0.6",
     "postcss-modules": "^1.5.0",
-    "svelte": "^3.18.2"
+    "svelte": "^3.20.1"
   },
   "keywords": [],
   "license": "Boost"

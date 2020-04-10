@@ -1,4 +1,5 @@
 #include <app/config.hpp>
+#include <boost/program_options.hpp>
 #include <net/server.hpp>
 #include <spdlog/async.h>
 #include <spdlog/details/file_helper.h>
@@ -6,6 +7,8 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/sink.h>
+#include <version.h>
+#include <iostream>
 #include <cstdlib>
 
 #define LOG_PATTERN_DEBUG "[%T.%e] [%^%L%$] %v %@"
@@ -248,23 +251,54 @@ int main(int argc, char* argv[])
   std::filesystem::path data;
   std::filesystem::path html;
   try {
+    namespace po = boost::program_options;
+
     std::filesystem::path file;
     std::filesystem::path path = application().parent_path().parent_path();
-    if (argc > 1) {
-      file = std::filesystem::absolute(std::filesystem::path(argv[1]));
+
+    // clang-format off
+    po::options_description desc("usage: " PROJECT_NAME " [options]\n\navailable options");
+    desc.add_options()
+      ("help", "show this help message")
+      ("config", po::value<std::string>(), "path to the config file")
+      ("html", po::value<std::string>(), "path to the html directory")
+      ("data", po::value<std::string>(), "path to the data directory");
+    // clang-format on
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+      std::cerr << desc << std::endl;
+      return EXIT_SUCCESS;
+    }
+
+    if (vm.count("config")) {
+      file = std::filesystem::absolute(std::filesystem::path(vm["config"].as<std::string>()));
     } else {
       file = std::filesystem::absolute(path / "etc" / "server.ini");
     }
-    if (argc > 2) {
-      html = std::filesystem::absolute(std::filesystem::path(argv[2]));
+
+    if (vm.count("html")) {
+      html = std::filesystem::absolute(std::filesystem::path(vm["html"].as<std::string>()));
     } else {
       html = path / "html";
     }
-    if (argc > 3) {
-      data = std::filesystem::absolute(std::filesystem::path(argv[3]));
+
+    if (vm.count("data")) {
+      data = std::filesystem::absolute(std::filesystem::path(vm["data"].as<std::string>()));
     } else {
       data = path / "data";
     }
+
+#ifdef WIN32
+    path = path.parent_path().parent_path();
+    file = std::filesystem::absolute(path / "server.ini");
+    html = path / "html";
+    data = path / "data";
+#endif
+
     config.parse(file);
     logger(config.log.severity, config.log.filename, 0);
   }

@@ -34,31 +34,23 @@ clean:
 build/windows/debug/rules.ninja: CMakeLists.txt
 	@cmake -GNinja -DCMAKE_BUILD_TYPE=Debug \
 	  -DCMAKE_INSTALL_PREFIX="$(MAKEDIR)\build\install" \
-	  -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)\scripts\buildsystems\vcpkg.cmake" \
-	  -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$(VCPKG_ROOT)\scripts\toolchains\windows.cmake" \
-	  -DVCPKG_TARGET_TRIPLET="x64-windows" \
+	  -DCMAKE_TOOLCHAIN_FILE="$(MAKEDIR)\res\toolchain.cmake" \
 	  -B build/windows/debug
 
 build/windows/release/rules.ninja: CMakeLists.txt
 	@cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
 	  -DCMAKE_INSTALL_PREFIX="$(MAKEDIR)\build\install" \
-	  -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)\scripts\buildsystems\vcpkg.cmake" \
-	  -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$(VCPKG_ROOT)\scripts\toolchains\windows.cmake" \
-	  -DVCPKG_TARGET_TRIPLET="x64-windows-static" \
+	  -DCMAKE_TOOLCHAIN_FILE="$(MAKEDIR)\res\toolchain.cmake" \
 	  -B build/windows/release
 
 build/linux/debug/rules.ninja: CMakeLists.txt
 	@cmake -GNinja -DCMAKE_BUILD_TYPE=Debug \
 	  -DCMAKE_INSTALL_PREFIX="$(CURDIR)/build/install" \
-	  -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake" \
-	  -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/toolchains/linux.cmake" \
-	  -DVCPKG_TARGET_TRIPLET="x64-linux" \
+	  -DCMAKE_TOOLCHAIN_FILE="$(CURDIR)/res/toolchain.cmake" \
 	  -B build/linux/debug
 
 build/linux/release/rules.ninja: CMakeLists.txt
 	@cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
 	  -DCMAKE_INSTALL_PREFIX="$(CURDIR)/build/install" \
-	  -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake" \
-	  -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/toolchains/linux.cmake" \
-	  -DVCPKG_TARGET_TRIPLET="x64-linux" \
+	  -DCMAKE_TOOLCHAIN_FILE="$(CURDIR)/res/toolchain.cmake" \
 	  -B build/linux/release
