@@ -9,7 +9,7 @@
 #   target_link_libraries(main PRIVATE date::date date::tz)
 #
 #   include(tzdata)
-#   tzdata(main 2019c ${CMAKE_CURRENT_SOURCE_DIR}/tzdata)
+#   tzdata(main 2020a ${CMAKE_CURRENT_SOURCE_DIR}/tzdata)
 #
 #   if(WIN32)
 #     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tzdata DESTINATION share)

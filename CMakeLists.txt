@@ -52,7 +52,7 @@ find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
 
 include(tzdata)
-tzdata(${PROJECT_NAME} 2019c ${CMAKE_CURRENT_BINARY_DIR}/tzdata)
+tzdata(${PROJECT_NAME} 2020a ${CMAKE_CURRENT_BINARY_DIR}/tzdata)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
   target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
